@@ -6,35 +6,31 @@
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap');
 
 :root {
-  /* Fjör Avenue Aesthetic Palette */
+  /* Fjör Avenue Signature Minimalist Palette */
+  --bg-mineral-gray: #E9E9E9;
+  --bg-mineral-light: #F3F3F3;
   --bg-porcelain: #FFFFFF;
-  --bg-linen-light: #FAF8F5;
-  --bg-linen: #F4EFEB;
-  --bg-sand-warm: #EFE7DE;
-  --bg-blush-tint: #F7EFEA;
-  --bg-taupe-soft: #E5DDD2;
+  --bg-card-white: #FFFFFF;
+  --bg-stone-soft: #EDEDED;
   
-  /* Text & Contrast (Fjör Noir & Espresso) */
+  /* Text & Contrast (Fjör Noir & Slate) */
   --text-primary: #1C1C1C;
-  --text-secondary: #4A433B;
-  --text-muted: #73695F;
-  --text-light: #9C9185;
+  --text-secondary: #404040;
+  --text-muted: #666666;
+  --text-light: #8E8E8E;
 
   /* Luxury Accents */
   --sapphire-dark: #0C1A30;
   --sapphire-navy: #132742;
   --gold-warm: #C5A880;
   --gold-bronze: #B38E58;
-  --gold-deep: #8F6F3A;
-  --blush-rose: #DEB8AA;
-  --sage-tint: #7B8271;
   
   /* Borders & Shadows (Fjör Minimalist Hairlines) */
-  --border-hairline: rgba(74, 67, 59, 0.12);
-  --border-gold-subtle: rgba(197, 168, 128, 0.38);
-  --border-gold-solid: rgba(179, 142, 88, 0.5);
-  --shadow-fjor: 0 15px 35px -10px rgba(28, 28, 28, 0.06), 0 0 15px rgba(197, 168, 128, 0.08);
-  --shadow-fjor-hover: 0 25px 50px -12px rgba(28, 28, 28, 0.12), 0 0 25px rgba(197, 168, 128, 0.2);
+  --border-hairline: #CACACA;
+  --border-subtle: rgba(28, 28, 28, 0.12);
+  --border-gold-subtle: rgba(197, 168, 128, 0.4);
+  --shadow-fjor: 0 10px 30px -8px rgba(28, 28, 28, 0.06);
+  --shadow-fjor-hover: 0 20px 45px -10px rgba(28, 28, 28, 0.12);
 }
 
 /* Base resets & typography */
@@ -42,7 +38,7 @@ html {
   scroll-behavior: smooth;
   font-family: 'Plus Jakarta Sans', sans-serif;
   color: #1C1C1C;
-  background-color: #FAF8F5;
+  background-color: #E9E9E9;
 }
 
 body {
@@ -50,12 +46,12 @@ body {
   position: relative;
   color: #1C1C1C;
   background: linear-gradient(180deg, 
-    #F4EFEB 0%, 
-    #FAF8F5 5%, 
-    #FFFFFF 18%, 
+    #E9E9E9 0%, 
+    #EDEDED 6%, 
+    #FFFFFF 20%, 
     #FFFFFF 50%, 
-    #FAF8F5 80%, 
-    #EFE7DE 100%
+    #F3F3F3 80%, 
+    #E9E9E9 100%
   );
 }
 
