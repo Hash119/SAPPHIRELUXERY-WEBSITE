@@ -6,63 +6,65 @@
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap');
 
 :root {
-  /* Fjör Avenue Signature Minimalist Palette */
-  --bg-mineral-gray: #E9E9E9;
-  --bg-mineral-light: #F3F3F3;
+  /* Exact Sapphire Logo Color Palette */
+  --sapphire-blue: #1C4E68;
+  --sapphire-blue-dark: #12374A;
+  --sapphire-blue-light: #2A6A8C;
+  --sapphire-blue-ice: #F0F6F9;
+  --sapphire-blue-mist: #E2EDF3;
+  
+  --logo-gold-amber: #EFA426;
+  --logo-gold-warm: #F39C12;
+  --logo-gold-deep: #D97706;
+  
+  /* Backgrounds */
   --bg-porcelain: #FFFFFF;
+  --bg-ice-mist: #F4F8FA;
   --bg-card-white: #FFFFFF;
-  --bg-stone-soft: #EDEDED;
+  --bg-mineral-soft: #EAEFF2;
   
-  /* Text & Contrast (Fjör Noir & Slate) */
-  --text-primary: #1C1C1C;
-  --text-secondary: #404040;
-  --text-muted: #666666;
-  --text-light: #8E8E8E;
-
-  /* Luxury Accents */
-  --sapphire-dark: #0C1A30;
-  --sapphire-navy: #132742;
-  --gold-warm: #C5A880;
-  --gold-bronze: #B38E58;
+  /* Text */
+  --text-primary: #12374A;
+  --text-secondary: #2C5267;
+  --text-muted: #587788;
   
-  /* Borders & Shadows (Fjör Minimalist Hairlines) */
-  --border-hairline: #CACACA;
-  --border-subtle: rgba(28, 28, 28, 0.12);
-  --border-gold-subtle: rgba(197, 168, 128, 0.4);
-  --shadow-fjor: 0 10px 30px -8px rgba(28, 28, 28, 0.06);
-  --shadow-fjor-hover: 0 20px 45px -10px rgba(28, 28, 28, 0.12);
+  /* Borders & Shadows */
+  --border-sapphire-subtle: rgba(28, 78, 104, 0.16);
+  --border-gold-subtle: rgba(239, 164, 38, 0.4);
+  --shadow-sapphire: 0 12px 35px -8px rgba(28, 78, 104, 0.12);
+  --shadow-sapphire-hover: 0 20px 45px -10px rgba(28, 78, 104, 0.22);
 }
 
 /* Base resets & typography */
 html {
   scroll-behavior: smooth;
   font-family: 'Plus Jakarta Sans', sans-serif;
-  color: #1C1C1C;
-  background-color: #E9E9E9;
+  color: #12374A;
+  background-color: #F4F8FA;
 }
 
 body {
   overflow-x: hidden;
   position: relative;
-  color: #1C1C1C;
+  color: #12374A;
   background: linear-gradient(180deg, 
-    #E9E9E9 0%, 
-    #EDEDED 6%, 
-    #FFFFFF 20%, 
+    #E8EFF3 0%, 
+    #F4F8FA 5%, 
+    #FFFFFF 18%, 
     #FFFFFF 50%, 
-    #F3F3F3 80%, 
-    #E9E9E9 100%
+    #F0F6F9 80%, 
+    #E5EFF4 100%
   );
 }
 
 /* Logo Luxury Ambient Animation */
 @keyframes logoLuxuryGlow {
   0%, 100% {
-    box-shadow: 0 0 10px rgba(212, 175, 55, 0.35), 0 0 20px rgba(179, 142, 88, 0.15);
+    box-shadow: 0 0 10px rgba(239, 164, 38, 0.35), 0 0 20px rgba(28, 78, 104, 0.18);
     transform: scale(1);
   }
   50% {
-    box-shadow: 0 0 20px rgba(212, 175, 55, 0.65), 0 0 35px rgba(197, 168, 128, 0.35);
+    box-shadow: 0 0 22px rgba(239, 164, 38, 0.7), 0 0 35px rgba(28, 78, 104, 0.35);
     transform: scale(1.035);
   }
 }
@@ -74,18 +76,18 @@ body {
 
 .logo-luxury-animate:hover {
   transform: scale(1.08) rotate(3deg);
-  box-shadow: 0 0 25px rgba(212, 175, 55, 0.85);
+  box-shadow: 0 0 28px rgba(239, 164, 38, 0.85);
 }
 
 /* Global Typography & Font Family Harmonization (Sapphire Logo Palette) */
 h1, h2, h3, h4, .font-serif, .font-serif-luxury, .font-editorial {
   font-family: 'Cormorant Garamond', Georgia, serif;
-  color: #0C1A30;
+  color: #1C4E68;
   letter-spacing: 0.025em;
 }
 
 p {
-  color: #334155;
+  color: #385667;
   font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
@@ -108,7 +110,7 @@ p {
   font-weight: 300;
   letter-spacing: 0.04em;
   line-height: 1.06;
-  color: #0C1A30;
+  color: #1C4E68;
 }
 
 .editorial-italic-highlight, .editorial-italic {
@@ -116,7 +118,7 @@ p {
   font-style: italic;
   font-weight: 500;
   letter-spacing: 0.04em;
-  color: #B38E58;
+  color: #EFA426;
 }
 
 .fjor-pill-badge {
@@ -126,13 +128,13 @@ p {
   padding: 0.35rem 1.1rem;
   border-radius: 9999px;
   background: #FFFFFF;
-  border: 1px solid rgba(197, 168, 128, 0.45);
-  color: #74572B;
+  border: 1px solid rgba(28, 78, 104, 0.2);
+  color: #1C4E68;
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.2em;
-  box-shadow: 0 4px 15px -3px rgba(12, 26, 48, 0.06), 0 0 12px rgba(212, 175, 55, 0.1);
+  box-shadow: 0 4px 15px -3px rgba(28, 78, 104, 0.08);
 }
 
 .luxury-eyebrow {
@@ -146,9 +148,9 @@ p {
   text-transform: uppercase;
   letter-spacing: 0.18em;
   background: #FFFFFF;
-  color: #74572B;
-  border: 1px solid rgba(197, 168, 128, 0.45);
-  box-shadow: 0 4px 15px -2px rgba(12, 26, 48, 0.06), 0 0 15px rgba(212, 175, 55, 0.12);
+  color: #1C4E68;
+  border: 1px solid rgba(239, 164, 38, 0.45);
+  box-shadow: 0 4px 15px -2px rgba(28, 78, 104, 0.08), 0 0 15px rgba(239, 164, 38, 0.15);
 }
 
 /* Custom Posh Scrollbar */
@@ -156,26 +158,26 @@ p {
   width: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #FAF6F0;
+  background: #F0F6F9;
 }
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #D8B984 0%, #B38E58 100%);
+  background: linear-gradient(180deg, #2A6A8C 0%, #1C4E68 100%);
   border-radius: 6px;
-  border: 2px solid #FAF6F0;
+  border: 2px solid #F0F6F9;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #93713D;
+  background: #12374A;
 }
 
 /* Posh Gold Gradient Text */
 .gold-text-gradient {
-  background: linear-gradient(135deg, #0C1A30 0%, #74572B 50%, #B38E58 100%);
+  background: linear-gradient(135deg, #1C4E68 0%, #EFA426 50%, #D97706 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .gold-rich-text {
-  background: linear-gradient(135deg, #93713D 0%, #D4AF37 50%, #74572B 100%);
+  background: linear-gradient(135deg, #D97706 0%, #EFA426 50%, #F59E0B 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
