@@ -1,0 +1,838 @@
+/* ===================================================================
+   SAPPHIRE LUXURY AESTHETICS - POSH CREAM & GOLD LIGHT LUXURY THEME
+   Colombo 05, Sri Lanka | Inspired by world-class aesthetic wellness
+   =================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* Refined Cream White Bond Theme (Extracted from Photos/sample colour.webp) */
+  --bg-porcelain: #FAFAF0;
+  --bg-cream: #FAF6F0;
+  --bg-cream-soft: #F0E6DC;
+  --bg-matte-sand: #E6DCD2;
+  --bg-champagne: #DCD2C8;
+  --bg-beige-bond: #D6C8BC;
+  --bg-gray-bond: #D2C8BE;
+  
+  /* Text & Deep Accents */
+  --text-primary: #0C1A30;
+  --text-secondary: #334155;
+  --text-muted: #64748B;
+  --text-light: #94A3B8;
+
+  /* Luxury Sapphire Accents */
+  --sapphire-dark: #0A192F;
+  --sapphire-navy: #132742;
+  --sapphire-accent: #1E3E62;
+  --sapphire-light: #2A4E80;
+  
+  /* Polished Cashmere Gold */
+  --gold-50: #FAFAF0;
+  --gold-100: #F0E6DC;
+  --gold-200: #E6DCD2;
+  --gold-300: #DCD2C8;
+  --gold-400: #D6C8BC;
+  --gold-500: #B38E58;
+  --gold-600: #93713D;
+  --gold-700: #74572B;
+  
+  /* Borders & Shadows */
+  --border-gold-subtle: rgba(197, 168, 128, 0.35);
+  --border-gold-solid: rgba(179, 142, 88, 0.45);
+  --shadow-posh: 0 20px 40px -15px rgba(12, 26, 48, 0.07), 0 0 15px rgba(197, 168, 128, 0.12);
+  --shadow-posh-hover: 0 25px 50px -12px rgba(12, 26, 48, 0.12), 0 0 25px rgba(197, 168, 128, 0.25);
+}
+
+/* Base resets & typography */
+html {
+  scroll-behavior: smooth;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  color: #2A2621;
+  background-color: #FAF6F0;
+}
+
+body {
+  overflow-x: hidden;
+  position: relative;
+  color: #2A2621;
+  background: linear-gradient(180deg, 
+    #F5EFEB 0%, 
+    #FAF6F0 6%, 
+    #FDFCF9 16%, 
+    #FFFFFF 35%, 
+    #FFFFFF 65%, 
+    #FBF8F4 82%, 
+    #F5EFEB 100%
+  );
+}
+
+/* Logo Luxury Ambient Animation */
+@keyframes logoLuxuryGlow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.35), 0 0 20px rgba(179, 142, 88, 0.15);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.65), 0 0 35px rgba(197, 168, 128, 0.35);
+    transform: scale(1.035);
+  }
+}
+
+.logo-luxury-animate {
+  animation: logoLuxuryGlow 4.5s ease-in-out infinite;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.logo-luxury-animate:hover {
+  transform: scale(1.08) rotate(3deg);
+  box-shadow: 0 0 25px rgba(212, 175, 55, 0.85);
+}
+
+.font-serif-luxury {
+  font-family: 'Playfair Display', Georgia, serif;
+}
+
+.font-editorial {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  letter-spacing: 0.03em;
+}
+
+.font-sans-clean {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.font-modern {
+  font-family: 'Outfit', sans-serif;
+}
+
+/* Fjör Avenue Aesthetic Typography & Badges */
+.editorial-hero-title {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  line-height: 1.08;
+}
+
+.editorial-italic-highlight {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+}
+
+.fjor-pill-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 1.1rem;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(251, 241, 237, 0.95) 100%);
+  border: 1px solid rgba(197, 168, 128, 0.4);
+  color: #74572B;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  box-shadow: 0 4px 15px -3px rgba(12, 26, 48, 0.05), 0 0 15px rgba(212, 175, 55, 0.12);
+  backdrop-filter: blur(8px);
+}
+
+/* Custom Posh Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #FAF6F0;
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #D8B984 0%, #B38E58 100%);
+  border-radius: 6px;
+  border: 2px solid #FAF6F0;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #93713D;
+}
+
+/* Posh Gold Gradient Text */
+.gold-text-gradient {
+  background: linear-gradient(135deg, #0C1A30 0%, #74572B 50%, #B38E58 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gold-rich-text {
+  background: linear-gradient(135deg, #93713D 0%, #D4AF37 50%, #74572B 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Editorial Typography & Luxury Heading Embellishments */
+.editorial-italic {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+  font-weight: 500;
+}
+
+.luxury-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(250, 246, 240, 0.95) 100%);
+  color: #74572B;
+  border: 1px solid rgba(197, 168, 128, 0.45);
+  box-shadow: 0 4px 15px -3px rgba(12, 26, 48, 0.05), 0 0 15px rgba(212, 175, 55, 0.15);
+  backdrop-filter: blur(8px);
+}
+
+.luxury-eyebrow::before,
+.luxury-eyebrow::after {
+  content: '✦';
+  font-size: 0.65rem;
+  color: #D4AF37;
+}
+
+/* Ambient Lighting & Glow Spheres */
+.ambient-glow-sphere {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(80px);
+  opacity: 0.35;
+  z-index: 0;
+}
+
+.ambient-gold {
+  background: radial-gradient(circle, rgba(212, 175, 55, 0.35) 0%, rgba(197, 168, 128, 0.05) 70%, transparent 100%);
+}
+
+.ambient-sapphire {
+  background: radial-gradient(circle, rgba(12, 26, 48, 0.25) 0%, rgba(30, 62, 98, 0.05) 70%, transparent 100%);
+}
+
+/* High-End Glassmorphism Card (Elevated Luxury) */
+.luxury-glass-elevated {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1.5px solid rgba(197, 168, 128, 0.35);
+  box-shadow: 0 20px 45px -10px rgba(12, 26, 48, 0.08), 0 0 25px rgba(212, 175, 55, 0.12);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.luxury-glass-elevated:hover {
+  transform: translateY(-6px);
+  border-color: rgba(212, 175, 55, 0.7);
+  box-shadow: 0 25px 60px -12px rgba(12, 26, 48, 0.14), 0 0 35px rgba(212, 175, 55, 0.25);
+}
+
+/* Hero Doctor Portrait Presentation */
+.hero-portrait-container {
+  position: relative;
+  border-radius: 2.5rem;
+  overflow: hidden;
+  background: linear-gradient(145deg, #FFFFFF 0%, #FAF6F0 60%, #F5EFEB 100%);
+  border: 2px solid rgba(179, 142, 88, 0.45);
+  box-shadow: 0 30px 70px -15px rgba(12, 26, 48, 0.16), 0 0 45px rgba(197, 168, 128, 0.3);
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hero-portrait-container:hover {
+  border-color: rgba(212, 175, 55, 0.85);
+  box-shadow: 0 35px 80px -12px rgba(12, 26, 48, 0.22), 0 0 55px rgba(212, 175, 55, 0.45);
+  transform: translateY(-4px);
+}
+
+.hero-portrait-fade {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4/5;
+  overflow: hidden;
+  background: #0C1A30;
+}
+
+.hero-portrait-fade img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 15%;
+  transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), filter 0.8s ease;
+  display: block;
+}
+
+.hero-portrait-container:hover .hero-portrait-fade img {
+  transform: scale(1.04);
+}
+
+/* Multi-layer smooth luxury fade */
+.hero-portrait-fade::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 48%;
+  background: linear-gradient(180deg, 
+    rgba(250, 246, 240, 0) 0%, 
+    rgba(250, 246, 240, 0.18) 25%, 
+    rgba(250, 246, 240, 0.65) 55%, 
+    rgba(250, 246, 240, 0.95) 85%, 
+    #FAF6F0 100%
+  );
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Subtle side vignette for seamless edge blend */
+.hero-portrait-fade::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 30%, transparent 60%, rgba(12, 26, 48, 0.12) 100%);
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* Ambient breathing aura */
+@keyframes luxuryAuraPulse {
+  0%, 100% {
+    opacity: 0.45;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.75;
+    transform: scale(1.05);
+  }
+}
+
+.hero-aura-pulse {
+  animation: luxuryAuraPulse 6s ease-in-out infinite;
+}
+
+/* Posh Cards & Glassmorphism */
+.glass-cream-card {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(197, 168, 128, 0.35);
+  box-shadow: var(--shadow-posh);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-cream-card:hover {
+  border-color: rgba(179, 142, 88, 0.65);
+  box-shadow: var(--shadow-posh-hover);
+  transform: translateY(-5px);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.glass-header-posh {
+  background: rgba(253, 251, 247, 0.92);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(197, 168, 128, 0.3);
+}
+
+.glass-matte-box {
+  background: #F5EFEB;
+  border: 1px solid rgba(197, 168, 128, 0.3);
+}
+
+/* Luxury Gold & Navy Buttons */
+.btn-luxury-gold {
+  background: linear-gradient(135deg, #C5A880 0%, #B38E58 50%, #8E6E38 100%);
+  color: #FFFFFF;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-size: 0.82rem;
+  border-radius: 9999px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.35s ease;
+  box-shadow: 0 8px 20px -4px rgba(179, 142, 88, 0.35);
+}
+
+.btn-luxury-gold::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  transition: 0.6s;
+}
+
+.btn-luxury-gold:hover::before {
+  left: 100%;
+}
+
+.btn-luxury-gold:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 25px -4px rgba(179, 142, 88, 0.5);
+  color: #FFFFFF;
+}
+
+.btn-luxury-sapphire {
+  background: #0C1A30;
+  color: #FDFBF7;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-size: 0.82rem;
+  border-radius: 9999px;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 20px -4px rgba(12, 26, 48, 0.25);
+}
+
+.btn-luxury-sapphire:hover {
+  background: #183153;
+  color: #FFFFFF;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 25px -4px rgba(12, 26, 48, 0.35);
+}
+
+.btn-luxury-outline {
+  border: 1.5px solid #B38E58;
+  color: #0C1A30;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  font-size: 0.84rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.7);
+  transition: all 0.3s ease;
+}
+
+.btn-luxury-outline:hover {
+  background: #B38E58;
+  border-color: #B38E58;
+  color: #FFFFFF;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px -5px rgba(179, 142, 88, 0.35);
+}
+
+/* Background Soft Atmospheric Radiance */
+.ambient-glow-cream-1 {
+  position: absolute;
+  width: 650px;
+  height: 650px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(197, 168, 128, 0.18) 0%, rgba(253, 251, 247, 0) 70%);
+  filter: blur(60px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.ambient-glow-cream-2 {
+  position: absolute;
+  width: 550px;
+  height: 550px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(30, 62, 98, 0.08) 0%, rgba(250, 246, 240, 0) 70%);
+  filter: blur(55px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Decorative Divider */
+.gold-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin: 1.5rem auto;
+}
+
+.gold-divider::before,
+.gold-divider::after {
+  content: '';
+  height: 1.5px;
+  width: 60px;
+  background: linear-gradient(90deg, transparent, #B38E58, transparent);
+}
+
+.gold-gem {
+  width: 9px;
+  height: 9px;
+  background: #B38E58;
+  transform: rotate(45deg);
+  box-shadow: 0 0 8px rgba(179, 142, 88, 0.5);
+}
+
+/* Treatment Card Styling */
+.treatment-badge {
+  background: rgba(253, 251, 247, 0.95);
+  border: 1px solid rgba(179, 142, 88, 0.4);
+  backdrop-filter: blur(8px);
+  color: #74572B;
+}
+
+.treatment-img-wrap {
+  position: relative;
+  overflow: hidden;
+  border-top-left-radius: 1rem;
+  border-top-right-radius: 1rem;
+}
+
+.treatment-img-wrap img {
+  transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-cream-card:hover .treatment-img-wrap img {
+  transform: scale(1.06);
+}
+
+.treatment-img-wrap::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 35%;
+  background: linear-gradient(180deg, transparent 0%, rgba(12, 26, 48, 0.35) 100%);
+  pointer-events: none;
+}
+
+/* Before & After Interactive Comparison Slider */
+.comparison-container {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  aspect-ratio: 4/3;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  border: 2px solid rgba(179, 142, 88, 0.35);
+  box-shadow: 0 20px 45px -10px rgba(12, 26, 48, 0.15);
+  user-select: none;
+}
+
+.comparison-image-before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.comparison-image-after {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%);
+}
+
+.comparison-slider-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 3px;
+  background: #B38E58;
+  box-shadow: 0 0 10px rgba(179, 142, 88, 0.6);
+  cursor: ew-resize;
+  transform: translateX(-50%);
+  z-index: 10;
+}
+
+.comparison-slider-button {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 42px;
+  height: 42px;
+  background: #FFFFFF;
+  border: 2px solid #B38E58;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #74572B;
+  box-shadow: 0 4px 15px rgba(12, 26, 48, 0.2);
+}
+
+/* Modals */
+.modal-overlay {
+  background: rgba(12, 26, 48, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.modal-content-luxury {
+  background: #FDFBF7;
+  border: 1px solid rgba(179, 142, 88, 0.4);
+  box-shadow: 0 30px 70px -15px rgba(12, 26, 48, 0.25);
+}
+
+/* Swiper custom pagination & arrows */
+.swiper-button-next,
+.swiper-button-prev {
+  color: #74572B !important;
+  background: #FFFFFF;
+  border: 1px solid rgba(179, 142, 88, 0.35);
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 50%;
+  box-shadow: 0 4px 15px rgba(12, 26, 48, 0.08);
+  transition: all 0.3s ease;
+}
+
+.swiper-button-next:after,
+.swiper-button-prev:after {
+  font-size: 1.1rem !important;
+  font-weight: bold;
+}
+
+.swiper-button-next:hover,
+.swiper-button-prev:hover {
+  background: #B38E58;
+  color: #FFFFFF !important;
+  box-shadow: 0 0 15px rgba(179, 142, 88, 0.4);
+}
+
+.swiper-pagination-bullet {
+  background: rgba(179, 142, 88, 0.4) !important;
+  opacity: 1 !important;
+}
+
+.swiper-pagination-bullet-active {
+  background: #B38E58 !important;
+  width: 24px !important;
+  border-radius: 6px !important;
+}
+
+/* Floating WhatsApp Pulse */
+.whatsapp-float {
+  position: fixed;
+  bottom: 26px;
+  right: 26px;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #25D366;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  box-shadow: 0 10px 25px rgba(37, 211, 102, 0.4);
+  transition: all 0.3s ease;
+  animation: floatPulse 3s infinite ease-in-out;
+}
+
+.whatsapp-float:hover {
+  transform: translateY(-4px) scale(1.03);
+  box-shadow: 0 15px 30px rgba(37, 211, 102, 0.6);
+  color: white;
+}
+
+@keyframes floatPulse {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+/* Doctor Signature / Quote Styling */
+.doctor-quote-box {
+  background: #F5EFEB;
+  border-left: 4px solid #B38E58;
+  border-radius: 0 1rem 1rem 0;
+}
+
+/* Input Fields Posh Focus */
+.luxury-input {
+  background: #FFFFFF;
+  border: 1.5px solid rgba(197, 168, 128, 0.45);
+  color: #0C1A30;
+  transition: all 0.3s ease;
+}
+
+.luxury-input:focus {
+  outline: none;
+  border-color: #B38E58;
+  box-shadow: 0 0 12px rgba(179, 142, 88, 0.25);
+  background: #FFFFFF;
+}
+
+.luxury-input::placeholder {
+  color: #94A3B8;
+}
+
+/* ===================================================================
+   EXTENSIONS - LUXURY SPIN WATERMARKS & MICRO-ANIMATIONS
+   =================================================================== */
+
+/* Slow spin for watermark logo in background */
+@keyframes slow-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-slow-spin {
+  animation: slow-spin 80s linear infinite;
+}
+
+/* Luxury button shimmer sweep animation */
+@keyframes shimmerSweep {
+  0% {
+    left: -150%;
+  }
+  50% {
+    left: 150%;
+  }
+  100% {
+    left: 150%;
+  }
+}
+
+.btn-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 50%;
+  background: linear-gradient(to right, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.35) 50%, rgba(255, 255, 255, 0) 100%);
+  transform: skewX(-25deg);
+  left: -150%;
+  animation: shimmerSweep 6s infinite ease-in-out;
+  pointer-events: none;
+}
+
+/* Premium Navigation hover underlines */
+.link-gold-underline {
+  position: relative;
+}
+
+.link-gold-underline::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  transform: scaleX(0);
+  height: 1.5px;
+  bottom: -4px;
+  left: 0;
+  background: linear-gradient(90deg, var(--gold-500) 0%, var(--gold-600) 100%);
+  transform-origin: bottom right;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.link-gold-underline:hover::after {
+  transform: scaleX(1);
+  transform-origin: bottom left;
+}
+
+/* Premium Card hover glow & zoom */
+.glass-cream-card {
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.5s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.5s cubic-bezier(0.16, 1, 0.3, 1), background 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-cream-card:hover {
+  transform: translateY(-8px) scale(1.01);
+  box-shadow: 0 30px 60px -12px rgba(12, 26, 48, 0.1), 0 0 30px rgba(179, 142, 88, 0.2);
+  border-color: rgba(179, 142, 88, 0.6);
+}
+
+/* ===================================================================
+   CLINICAL REELS & INSTAGRAM-STYLE TIMELINE STORIES
+   =================================================================== */
+.story-reel-card {
+  position: relative;
+  aspect-ratio: 9/16;
+  border-radius: 1.75rem;
+  overflow: hidden;
+  background: #0C1A30;
+  border: 1.5px solid rgba(197, 168, 128, 0.35);
+  box-shadow: 0 20px 40px -12px rgba(12, 26, 48, 0.15), 0 0 25px rgba(197, 168, 128, 0.2);
+  transition: all 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.story-reel-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  border-color: rgba(212, 175, 55, 0.8);
+  box-shadow: 0 30px 60px -10px rgba(12, 26, 48, 0.25), 0 0 35px rgba(212, 175, 55, 0.35);
+}
+
+.story-reel-card video,
+.story-reel-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.story-reel-card:hover img {
+  transform: scale(1.06);
+}
+
+/* Top Progress Bars */
+.story-progress-container {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  gap: 4px;
+  z-index: 20;
+}
+
+.story-progress-segment {
+  height: 2.5px;
+  flex: 1;
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.story-progress-segment.active::after {
+  content: '';
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: #D4AF37;
+  animation: storyProgressFill 5s linear infinite;
+}
+
+@keyframes storyProgressFill {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(0%); }
+}
+
+/* Gradient Overlay for Story Texts */
+.story-gradient-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, 
+    rgba(12, 26, 48, 0.5) 0%, 
+    transparent 35%, 
+    transparent 60%, 
+    rgba(12, 26, 48, 0.92) 100%
+  );
+  z-index: 10;
+  pointer-events: none;
+}
+

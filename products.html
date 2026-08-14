@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Skincare Boutique | Sapphire Luxury Aesthetics | Medical Cosmeceuticals Colombo 05</title>
+  
+  <meta name="description" content="Shop physician-curated medical-grade skincare cosmeceuticals formulated by Dr. Indi at Sapphire Luxury Aesthetics Colombo 05. Vitamin C serums, SPF 50+ sunscreen, acne cleansers, and hair growth peptides.">
+  <meta property="og:title" content="Skincare Boutique | Sapphire Luxury Aesthetics">
+  <meta property="og:image" content="Photos/Logo.jpg">
+  <link rel="icon" type="image/jpeg" href="Photos/Logo.jpg">
+
+  <!-- Google Fonts (Fjör Avenue Aesthetic & Cormorant Garamond Editorial) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            sapphire: {
+              950: '#06101E',
+              900: '#0C1A30',
+              850: '#132742',
+              800: '#1E3E62',
+              700: '#2A4E80',
+              600: '#3B68A6',
+              500: '#2563EB',
+            },
+            gold: {
+              50: '#FAF6F0',
+              100: '#F4EBD9',
+              200: '#E8D3B0',
+              300: '#D8B984',
+              400: '#C5A880',
+              500: '#B38E58',
+              600: '#93713D',
+              700: '#74572B',
+              gold: '#D4AF37',
+            },
+            cream: {
+              50: '#FAFAF0',
+              100: '#FAF6F0',
+              200: '#F0E6DC',
+              300: '#E6DCD2',
+              400: '#DCD2C8',
+              500: '#D6C8BC',
+              600: '#D2C8BE',
+            },
+            blush: {
+              50: '#FDF8F6',
+              100: '#FBF1ED',
+              200: '#F6E3DC',
+              300: '#ECD0C6',
+              400: '#DEB8AA',
+              500: '#CE9F8F',
+            },
+            linen: {
+              50: '#FAF8F5',
+              100: '#F5F1EB',
+              200: '#EBE4D8',
+              300: '#DDD2C1',
+            },
+            taupe: {
+              500: '#8C8075',
+              600: '#72675C',
+              700: '#544B41',
+              800: '#3B342C',
+              900: '#26211C',
+            }
+          },
+          fontFamily: {
+            serif: ['Playfair Display', 'serif'],
+            editorial: ['Cormorant Garamond', 'Georgia', 'serif'],
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+            modern: ['Outfit', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/shop.css">
+</head>
+<body class="bg-cream-100 text-slate-800 antialiased selection:bg-gold-500 selection:text-white">
+
+  <!-- Top Announcement Bar -->
+  <div class="bg-cream-200 border-b border-gold-400/30 text-xs py-2 px-4 relative z-50">
+    <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-2">
+      <div class="flex items-center gap-4 text-slate-700 font-medium">
+        <span class="flex items-center gap-1.5">
+          <i data-lucide="truck" class="w-3.5 h-3.5 text-gold-600"></i>
+          <span>Islandwide Delivery & Free Colombo Delivery on Orders over LKR 20,000</span>
+        </span>
+      </div>
+
+      <div class="flex items-center gap-4 text-slate-700">
+        <a href="tel:+94777143626" class="hover:text-gold-700 transition-colors flex items-center gap-1 font-semibold">
+          <i data-lucide="phone" class="w-3.5 h-3.5 text-gold-600"></i>
+          <span>Order Hotline: 077 714 3626</span>
+        </a>
+        <span class="text-gold-400/60">|</span>
+        <a href="admin.html" class="hover:text-gold-700 text-xs text-slate-500 font-medium">
+          <span>Admin Portal</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Header & Navigation -->
+  <header class="sticky top-0 z-40 bg-cream-50/95 backdrop-blur-md border-b border-gold-400/25 py-3.5 px-4 sm:px-8">
+    <div class="max-w-7xl mx-auto flex justify-between items-center">
+      
+      <!-- Brand Logo -->
+      <a href="index.html" class="flex items-center gap-3 group">
+        <div class="logo-luxury-animate relative w-11 h-11 rounded-full overflow-hidden border-2 border-gold-500 p-0.5 bg-white shadow-md">
+          <img src="Photos/Logo.jpg" alt="Sapphire Logo" class="w-full h-full object-cover rounded-full">
+        </div>
+        <div class="flex flex-col">
+          <span class="font-serif text-lg font-bold tracking-wide text-slate-900 group-hover:text-gold-700 transition-colors">
+            SAPPHIRE
+          </span>
+          <span class="text-[9px] uppercase tracking-[0.25em] text-gold-700 font-semibold">
+            Skincare Boutique
+          </span>
+        </div>
+      </a>
+
+      <!-- Desktop Links -->
+      <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-700">
+        <a href="index.html" class="link-gold-underline hover:text-gold-700 transition-colors">← Back to Clinic</a>
+        <a href="index.html#treatments" class="link-gold-underline hover:text-gold-700 transition-colors">Treatments</a>
+        <a href="index.html#about" class="link-gold-underline hover:text-gold-700 transition-colors">About Dr. Indi</a>
+        <a href="index.html#advisor" class="link-gold-underline hover:text-gold-700 transition-colors">Skin Advisor</a>
+      </nav>
+
+      <!-- Cart Button Header Trigger -->
+      <div class="flex items-center gap-3">
+        <button id="cart-header-btn" class="btn-luxury-sapphire px-4 py-2.5 rounded-full flex items-center gap-2.5 shadow-md relative">
+          <i data-lucide="shopping-bag" class="w-4 h-4"></i>
+          <span class="text-xs font-bold">Cart</span>
+          <span id="cart-counter-badge" class="w-5 h-5 rounded-full bg-gold-500 text-white text-[11px] font-bold flex items-center justify-center">0</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ========================================================================= -->
+  <!-- BOUTIQUE HERO BANNER                                                      -->
+  <!-- ========================================================================= -->
+  <section class="shop-hero-bg text-white py-16 px-4 sm:px-8 relative">
+    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
+      
+      <div class="lg:col-span-8 space-y-4">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/10 border border-gold-400/30 text-gold-300 text-xs font-semibold uppercase tracking-wider backdrop-blur-md">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+          <span>Doctor-Prescribed Medical Cosmeceuticals</span>
+        </div>
+
+        <h1 class="font-serif text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-tight">
+          Clinical Grade <span class="gold-rich-text">Skincare Formulations</span>
+        </h1>
+
+        <p class="text-slate-300 text-sm sm:text-base font-light max-w-2xl leading-relaxed">
+          Formulated to sustain and amplify clinical treatment results. Every product in the Sapphire Boutique is physician-curated by <strong class="text-white font-semibold">Dr. Indi</strong> with high-concentration bio-actives proven for Sri Lankan and South Asian skin.
+        </p>
+
+        <!-- Trust Badges -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
+          <div class="p-2.5 rounded-xl bg-white/5 border border-gold-400/20 text-xs flex items-center gap-2">
+            <i data-lucide="shield-check" class="w-4 h-4 text-gold-400"></i>
+            <span>Dermatologist Tested</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-white/5 border border-gold-400/20 text-xs flex items-center gap-2">
+            <i data-lucide="check" class="w-4 h-4 text-gold-400"></i>
+            <span>100% Authentic Actives</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-white/5 border border-gold-400/20 text-xs flex items-center gap-2 col-span-2 sm:col-span-1">
+            <i data-lucide="sparkles" class="w-4 h-4 text-gold-400"></i>
+            <span>Zero Harsh Additives</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Doctor Recommendation Box -->
+      <div class="lg:col-span-4">
+        <div class="p-5 rounded-2xl bg-white/10 backdrop-blur-md border border-gold-400/30 text-xs space-y-3 shadow-xl">
+          <div class="flex items-center gap-3">
+            <img src="Photos/Dr Indi.jpeg" alt="Dr. Indi" class="w-12 h-12 rounded-full border border-gold-400 object-cover" onerror="this.onerror=null; this.src='Photos/dr-indi.jpg';">
+            <div>
+              <div class="font-serif font-bold text-white text-sm">Dr. Indi Prescribes</div>
+              <div class="text-[11px] text-gold-300">Aesthetic Medicine Lead</div>
+            </div>
+          </div>
+          <p class="text-slate-300 italic font-light">
+            "Your at-home skincare regimen represents 80% of your long-term skin health. Never skip broad-spectrum sunscreen and antioxidant serum."
+          </p>
+          <a href="index.html#advisor" class="text-gold-300 hover:text-white font-semibold flex items-center gap-1 transition-colors">
+            <span>Take Virtual Skin Advisor Quiz</span>
+            <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- MAIN PRODUCTS BOUTIQUE SECTION                                            -->
+  <!-- ========================================================================= -->
+  <section class="py-16 px-4 sm:px-8 max-w-7xl mx-auto">
+    
+    <!-- Controls & Category Filters Toolbar -->
+    <div class="space-y-6 mb-12">
+      
+      <div class="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
+        <!-- Search Input -->
+        <div class="relative flex-1 max-w-md">
+          <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+          <input type="text" id="shop-search-input" placeholder="Search by product name, active ingredient..." class="luxury-input w-full pl-11 pr-4 py-3 rounded-full text-xs">
+        </div>
+
+        <!-- Sort Select -->
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-slate-500 font-semibold shrink-0">Sort By:</span>
+          <select id="shop-sort-select" class="luxury-input px-4 py-2.5 rounded-full text-xs bg-white">
+            <option value="featured">Featured Prescriptions</option>
+            <option value="price-low">Price: Low to High</option>
+            <option value="price-high">Price: High to Low</option>
+            <option value="rating">Top Rated</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Category Filter Buttons -->
+      <div class="flex flex-wrap gap-2 pt-2 border-t border-gold-400/20">
+        <button data-filter="all" class="shop-filter-btn active px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-wider bg-gold-500 text-white shadow-sm border border-gold-400/30">
+          All Cosmeceuticals
+        </button>
+        <button data-filter="brightening" class="shop-filter-btn px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-wider bg-white text-slate-700 border border-gold-400/30 hover:border-gold-500">
+          Brightening & Vitamin C
+        </button>
+        <button data-filter="acne" class="shop-filter-btn px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-wider bg-white text-slate-700 border border-gold-400/30 hover:border-gold-500">
+          Acne & BHA Clarifying
+        </button>
+        <button data-filter="sun-protection" class="shop-filter-btn px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-wider bg-white text-slate-700 border border-gold-400/30 hover:border-gold-500">
+          Sunscreen SPF 50+
+        </button>
+        <button data-filter="hair" class="shop-filter-btn px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-wider bg-white text-slate-700 border border-gold-400/30 hover:border-gold-500">
+          Hair Growth Peptides
+        </button>
+        <button data-filter="anti-aging" class="shop-filter-btn px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-wider bg-white text-slate-700 border border-gold-400/30 hover:border-gold-500">
+          Retinoids & Anti-Aging
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Products Grid Container -->
+    <div id="shop-products-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+      <!-- Rendered dynamically by shop.js -->
+    </div>
+
+    <!-- Empty State Message -->
+    <div id="shop-empty-state" class="text-center py-20 hidden space-y-4">
+      <div class="w-16 h-16 rounded-full bg-cream-200 border border-gold-400/40 flex items-center justify-center text-gold-700 mx-auto">
+        <i data-lucide="package-search" class="w-8 h-8"></i>
+      </div>
+      <h3 class="font-serif text-xl font-bold text-slate-900">No matching cosmeceuticals found</h3>
+      <p class="text-xs text-slate-500 max-w-sm mx-auto">Try refining your search terms or filter by another skincare category.</p>
+      <button onclick="document.getElementById('shop-search-input').value=''; filterAndRenderProducts();" class="btn-luxury-outline px-5 py-2 text-xs">
+        Reset All Filters
+      </button>
+    </div>
+
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- SLIDE-OUT CART DRAWER                                                     -->
+  <!-- ========================================================================= -->
+  <div id="cart-drawer" class="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-cream-50/98 backdrop-blur-xl shadow-2xl border-l border-gold-400/35 transform translate-x-full flex flex-col justify-between p-6">
+    
+    <!-- Drawer Header -->
+    <div>
+      <div class="flex justify-between items-center pb-4 border-b border-gold-400/30">
+        <div class="flex items-center gap-2">
+          <i data-lucide="shopping-bag" class="w-5 h-5 text-gold-600"></i>
+          <h3 class="font-serif text-lg font-bold text-slate-900">Your Skincare Bag</h3>
+          <span id="cart-drawer-count" class="text-xs text-gold-700 font-bold bg-cream-200 px-2 py-0.5 rounded-full">(0 items)</span>
+        </div>
+        <button id="close-cart-btn" class="text-slate-500 hover:text-slate-900 p-1.5 rounded-full hover:bg-cream-200">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Free Delivery Meter -->
+      <div class="my-4 p-3 rounded-xl bg-white border border-gold-400/25 space-y-1.5 text-xs">
+        <div class="flex justify-between text-[11px] font-medium text-slate-700">
+          <span id="delivery-meter-label">Free Colombo Delivery Progress</span>
+          <span id="delivery-meter-status" class="font-bold text-gold-700">Add LKR 20,000 for FREE delivery</span>
+        </div>
+        <div class="delivery-progress-bar">
+          <div id="delivery-progress-fill" class="delivery-progress-fill" style="width: 0%;"></div>
+        </div>
+      </div>
+
+      <!-- Cart Items List Container -->
+      <div id="cart-items-container" class="space-y-3 overflow-y-auto max-h-[48vh] pr-1">
+        <!-- Injected dynamically by shop.js -->
+      </div>
+    </div>
+
+    <!-- Drawer Footer & Checkout Action -->
+    <div class="pt-4 border-t border-gold-400/30 space-y-3">
+      
+      <!-- Subtotal & Delivery Summary -->
+      <div class="space-y-1.5 text-xs">
+        <div class="flex justify-between text-slate-600">
+          <span>Subtotal:</span>
+          <span id="cart-subtotal" class="font-bold text-slate-900">LKR 0</span>
+        </div>
+        <div class="flex justify-between text-slate-600">
+          <span>Delivery:</span>
+          <span id="cart-delivery-fee" class="font-bold text-slate-900">LKR 650 (Free above 20k)</span>
+        </div>
+        <div class="flex justify-between text-base font-serif font-bold text-slate-900 pt-1.5 border-t border-gold-400/20">
+          <span>Estimated Total:</span>
+          <span id="cart-total" class="gold-rich-text">LKR 0</span>
+        </div>
+      </div>
+
+      <!-- Quick Checkout Buttons -->
+      <div class="space-y-2">
+        <button id="cart-whatsapp-checkout-btn" class="w-full bg-[#25D366] text-white py-3.5 rounded-full font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg hover:scale-[1.02] transition-transform">
+          <i data-lucide="message-circle" class="w-4 h-4"></i>
+          <span>Order via WhatsApp Direct</span>
+        </button>
+
+        <button onclick="closeCart();" class="btn-luxury-outline w-full py-2.5 text-xs">
+          Continue Browsing
+        </button>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Cart Overlay Backdrop -->
+  <div id="cart-backdrop" class="fixed inset-0 z-40 bg-black/40 backdrop-blur-xs hidden"></div>
+
+  <!-- ========================================================================= -->
+  <!-- PRODUCT DETAIL QUICK VIEW MODAL                                           -->
+  <!-- ========================================================================= -->
+  <div id="product-modal" class="fixed inset-0 z-50 bg-black/65 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="quickview-modal-content max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 relative">
+      <button id="close-product-modal" class="absolute top-5 right-5 text-slate-400 hover:text-slate-900 p-2 rounded-full bg-cream-200">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 items-start">
+        
+        <!-- Product Image View -->
+        <div class="rounded-2xl overflow-hidden border border-gold-400/30 bg-white aspect-square relative">
+          <img id="modal-p-img" src="" alt="" class="w-full h-full object-cover">
+          <div class="absolute top-3 left-3">
+            <span id="modal-p-tag" class="text-[10px] uppercase font-bold px-2.5 py-1 rounded-full bg-white/95 text-gold-700 border border-gold-400/30"></span>
+          </div>
+        </div>
+
+        <!-- Product Details -->
+        <div class="space-y-4">
+          <div>
+            <span id="modal-p-category" class="text-[11px] uppercase tracking-wider text-gold-600 font-semibold block mb-1"></span>
+            <h3 id="modal-p-name" class="font-serif text-xl sm:text-2xl font-bold text-slate-900"></h3>
+            <span id="modal-p-volume" class="text-xs text-slate-500 block mt-0.5"></span>
+          </div>
+
+          <div class="font-serif text-2xl font-bold gold-rich-text" id="modal-p-price"></div>
+
+          <p id="modal-p-desc" class="text-slate-600 text-xs leading-relaxed font-light"></p>
+
+          <!-- Active Actives List -->
+          <div>
+            <span class="text-[11px] uppercase tracking-wider text-slate-700 font-bold block mb-1.5">Key Clinical Actives:</span>
+            <div id="modal-p-actives" class="flex flex-wrap gap-1.5"></div>
+          </div>
+
+          <!-- How to Use -->
+          <div class="p-3 rounded-xl bg-white border border-gold-400/25 text-xs text-slate-700">
+            <strong class="text-slate-900 block mb-0.5">How To Apply:</strong>
+            <span id="modal-p-how"></span>
+          </div>
+
+          <!-- Add to Cart Action -->
+          <div class="pt-2 flex items-center gap-3">
+            <div class="flex items-center border border-gold-400/40 rounded-full bg-white px-3 py-1.5">
+              <button id="modal-qty-minus" class="text-slate-600 hover:text-gold-700 font-bold px-1.5">-</button>
+              <span id="modal-qty-val" class="px-3 text-xs font-bold text-slate-900">1</span>
+              <button id="modal-qty-plus" class="text-slate-600 hover:text-gold-700 font-bold px-1.5">+</button>
+            </div>
+            
+            <button id="modal-add-cart-btn" class="flex-1 btn-luxury-gold py-3 text-xs font-semibold flex items-center justify-center gap-2">
+              <span>Add to Bag</span>
+              <i data-lucide="shopping-bag" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Floating Cart Pill -->
+  <div id="cart-floating-pill" class="cart-floating-trigger" onclick="openCart();">
+    <i data-lucide="shopping-bag" class="w-4 h-4 text-gold-400"></i>
+    <span class="text-xs font-bold font-serif" id="floating-cart-count">0 Items</span>
+    <span class="text-xs font-semibold text-gold-300" id="floating-cart-total">LKR 0</span>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-sapphire-950 text-slate-400 py-12 px-4 sm:px-8 border-t border-gold-500/30 mt-20">
+    <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-4 text-xs">
+      <div class="flex items-center gap-3">
+        <img src="Photos/Logo.jpg" alt="Logo" class="w-8 h-8 rounded-full border border-gold-500 object-cover">
+        <span class="font-serif text-white font-bold">Sapphire Luxury Skincare Boutique</span>
+      </div>
+      <p>© 2026 Sapphire Luxury Aesthetics • Colombo 05, Sri Lanka</p>
+      <a href="index.html" class="hover:text-gold-400 transition-colors">Return to Main Website →</a>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="assets/js/products-data.js"></script>
+  <script src="assets/js/shop.js"></script>
+</body>
+</html>

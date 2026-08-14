@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin CMS Portal | Sapphire Luxury Aesthetics Colombo 05</title>
+  
+  <link rel="icon" type="image/jpeg" href="Photos/Logo.jpg">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            sapphire: {
+              950: '#06101E',
+              900: '#0C1A30',
+              850: '#132742',
+              800: '#1E3E62',
+              700: '#2A4E80',
+            },
+            gold: {
+              300: '#D8B984',
+              400: '#C5A880',
+              500: '#B38E58',
+              600: '#93713D',
+              gold: '#D4AF37',
+            },
+            cream: {
+              100: '#FAF6F0',
+              200: '#F0E6DC',
+              300: '#E6DCD2',
+            }
+          },
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+            serif: ['Playfair Display', 'serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/admin.css">
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased flex h-screen overflow-hidden">
+
+  <!-- ========================================================================= -->
+  <!-- SIDEBAR NAVIGATION                                                        -->
+  <!-- ========================================================================= -->
+  <aside class="w-64 admin-sidebar flex flex-col justify-between p-5 shrink-0 z-30">
+    <div>
+      <!-- Brand Logo Header -->
+      <div class="flex items-center gap-3 pb-6 border-b border-slate-800">
+        <img src="Photos/Logo.jpg" alt="Logo" class="w-10 h-10 rounded-full border-2 border-gold-500 object-cover">
+        <div>
+          <span class="font-serif text-white font-bold text-sm block">SAPPHIRE CMS</span>
+          <span class="text-[10px] text-gold-400 font-semibold uppercase tracking-wider block">Clinic Control Suite</span>
+        </div>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="space-y-1.5 mt-6">
+        <button data-tab="overview" class="admin-nav-item active w-full">
+          <i data-lucide="layout-dashboard" class="w-4 h-4 text-gold-400"></i>
+          <span>Dashboard Overview</span>
+        </button>
+
+        <button data-tab="treatments" class="admin-nav-item w-full">
+          <i data-lucide="sparkles" class="w-4 h-4 text-gold-400"></i>
+          <span>Treatment & Photos</span>
+        </button>
+
+        <button data-tab="reviews" class="admin-nav-item w-full">
+          <i data-lucide="message-square-quote" class="w-4 h-4 text-gold-400"></i>
+          <span>Reviews & Results</span>
+        </button>
+
+        <button data-tab="products" class="admin-nav-item w-full">
+          <i data-lucide="shopping-bag" class="w-4 h-4 text-gold-400"></i>
+          <span>Skincare Boutique</span>
+        </button>
+
+        <button data-tab="bookings" class="admin-nav-item w-full">
+          <i data-lucide="calendar-check" class="w-4 h-4 text-gold-400"></i>
+          <span>Inquiries & Bookings</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- Bottom Actions -->
+    <div class="space-y-2 pt-4 border-t border-slate-800 text-xs">
+      <a href="index.html" target="_blank" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-colors font-medium">
+        <i data-lucide="external-link" class="w-3.5 h-3.5 text-gold-400"></i>
+        <span>View Live Website</span>
+      </a>
+      <button onclick="resetAllDataToDefaults();" class="w-full text-slate-400 hover:text-red-400 py-2 px-3 text-[11px] text-center block transition-colors">
+        Reset to Default Data
+      </button>
+    </div>
+  </aside>
+
+  <!-- ========================================================================= -->
+  <!-- MAIN DASHBOARD CONTENT AREA                                               -->
+  <!-- ========================================================================= -->
+  <main class="flex-1 flex flex-col min-w-0 bg-slate-50 overflow-hidden">
+    
+    <!-- Top Bar -->
+    <header class="bg-white border-b border-slate-200 py-3.5 px-8 flex justify-between items-center shrink-0">
+      <div>
+        <h1 id="tab-title" class="font-serif text-xl font-bold text-slate-900">Dashboard Overview</h1>
+        <p class="text-xs text-slate-500">Real-time clinic and boutique management portal</p>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span>System Live & Synced</span>
+        </span>
+        <a href="products.html" target="_blank" class="text-xs font-bold text-gold-700 hover:text-gold-800 flex items-center gap-1 bg-cream-100 px-3 py-1.5 rounded-full border border-gold-400/30">
+          <i data-lucide="shopping-bag" class="w-3.5 h-3.5"></i>
+          <span>Boutique</span>
+        </a>
+      </div>
+    </header>
+
+    <!-- Scrollable Tab Views -->
+    <div class="flex-1 overflow-y-auto p-8">
+      
+      <!-- ===================================================================== -->
+      <!-- TAB 1: DASHBOARD OVERVIEW                                            -->
+      <!-- ===================================================================== -->
+      <section id="tab-overview" class="admin-tab-content space-y-8">
+        
+        <!-- KPI Summary Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div class="admin-stat-card">
+            <div class="flex justify-between items-start mb-2">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Total Bookings</span>
+              <div class="p-2 rounded-xl bg-sapphire-900/10 text-sapphire-900">
+                <i data-lucide="calendar" class="w-5 h-5"></i>
+              </div>
+            </div>
+            <div class="text-3xl font-bold font-serif text-slate-900" id="kpi-bookings-count">0</div>
+            <div class="text-[11px] text-emerald-600 font-semibold mt-1">Direct via VIP Concierge</div>
+          </div>
+
+          <div class="admin-stat-card">
+            <div class="flex justify-between items-start mb-2">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Active Treatments</span>
+              <div class="p-2 rounded-xl bg-gold-500/10 text-gold-700">
+                <i data-lucide="sparkles" class="w-5 h-5"></i>
+              </div>
+            </div>
+            <div class="text-3xl font-bold font-serif text-slate-900" id="kpi-treatments-count">0</div>
+            <div class="text-[11px] text-slate-500 font-semibold mt-1">Medical Procedures</div>
+          </div>
+
+          <div class="admin-stat-card">
+            <div class="flex justify-between items-start mb-2">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Boutique Products</span>
+              <div class="p-2 rounded-xl bg-emerald-500/10 text-emerald-700">
+                <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+              </div>
+            </div>
+            <div class="text-3xl font-bold font-serif text-slate-900" id="kpi-products-count">0</div>
+            <div class="text-[11px] text-slate-500 font-semibold mt-1">Prescription Formulations</div>
+          </div>
+
+          <div class="admin-stat-card">
+            <div class="flex justify-between items-start mb-2">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Patient Satisfaction</span>
+              <div class="p-2 rounded-xl bg-amber-500/10 text-amber-600">
+                <i data-lucide="star" class="w-5 h-5"></i>
+              </div>
+            </div>
+            <div class="text-3xl font-bold font-serif text-slate-900">5.0 / 5.0</div>
+            <div class="text-[11px] text-emerald-600 font-semibold mt-1">100% Verified Reviews</div>
+          </div>
+        </div>
+
+        <!-- Quick Action Shortcut Banners -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="p-6 rounded-2xl bg-gradient-to-br from-sapphire-900 to-sapphire-950 text-white shadow-lg space-y-3">
+            <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-gold-400">
+              <i data-lucide="image-plus" class="w-5 h-5"></i>
+            </div>
+            <h3 class="font-serif text-lg font-bold">Upload Treatment Photos</h3>
+            <p class="text-xs text-slate-300 font-light">Add new clinical procedures or update before-and-after cases displayed on the homepage.</p>
+            <button onclick="switchTab('treatments'); openTreatmentModalForm();" class="btn-luxury-gold px-4 py-2 text-xs">
+              + Add Treatment Photo
+            </button>
+          </div>
+
+          <div class="p-6 rounded-2xl bg-gradient-to-br from-cream-200 to-cream-300 border border-gold-400/40 shadow-sm space-y-3 text-slate-900">
+            <div class="w-10 h-10 rounded-xl bg-gold-500 text-white flex items-center justify-center">
+              <i data-lucide="package-plus" class="w-5 h-5"></i>
+            </div>
+            <h3 class="font-serif text-lg font-bold">Add Skincare Product</h3>
+            <p class="text-xs text-slate-600 font-light">Publish new cosmeceuticals, upload product images, and set prices for the online boutique.</p>
+            <button onclick="switchTab('products'); openProductModalForm();" class="btn-luxury-sapphire px-4 py-2 text-xs">
+              + New Boutique Item
+            </button>
+          </div>
+
+          <div class="p-6 rounded-2xl bg-white border border-gold-400/30 shadow-sm space-y-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+              <i data-lucide="message-circle" class="w-5 h-5"></i>
+            </div>
+            <h3 class="font-serif text-lg font-bold text-slate-900">Direct Patient Leads</h3>
+            <p class="text-xs text-slate-600 font-light">Inspect all incoming consultation and product order drafts logged via WhatsApp.</p>
+            <button onclick="switchTab('bookings');" class="btn-luxury-outline px-4 py-2 text-xs">
+              View Inquiries Log →
+            </button>
+          </div>
+        </div>
+
+        <!-- Recent Bookings Table Preview -->
+        <div class="space-y-4">
+          <div class="flex justify-between items-center">
+            <h3 class="font-serif text-lg font-bold text-slate-900">Recent Appointment Requests</h3>
+            <button onclick="switchTab('bookings');" class="text-xs text-gold-700 font-bold hover:underline">View All →</button>
+          </div>
+          <div class="admin-table-container">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Ref ID</th>
+                  <th>Client Name</th>
+                  <th>Treatment Requested</th>
+                  <th>Date & Slot</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="overview-recent-bookings-body">
+                <!-- Injected by admin.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ===================================================================== -->
+      <!-- TAB 2: TREATMENTS & PHOTO MANAGER                                    -->
+      <!-- ===================================================================== -->
+      <section id="tab-treatments" class="admin-tab-content space-y-6 hidden">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="font-serif text-xl font-bold text-slate-900">Medical Treatments & Procedure Photos</h2>
+            <p class="text-xs text-slate-500">Manage procedures, upload treatment photos, edit pricing, and update descriptions.</p>
+          </div>
+          <button onclick="openTreatmentModalForm();" class="btn-luxury-sapphire px-5 py-2.5 text-xs font-bold flex items-center gap-2 shadow-md">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span>Add New Medical Treatment</span>
+          </button>
+        </div>
+
+        <!-- Treatments Grid Table -->
+        <div class="admin-table-container">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Photo</th>
+                <th>Treatment Name</th>
+                <th>Category</th>
+                <th>Duration & Downtime</th>
+                <th>Pricing Guide</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="treatments-table-body">
+              <!-- Injected by admin.js -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===================================================================== -->
+      <!-- TAB 3: PATIENT REVIEWS & TRANSFORMATIONS                             -->
+      <!-- ===================================================================== -->
+      <section id="tab-reviews" class="admin-tab-content space-y-6 hidden">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="font-serif text-xl font-bold text-slate-900">Patient Reviews & Testimonials</h2>
+            <p class="text-xs text-slate-500">Moderate testimonials, add new patient reviews, and upload before/after photos.</p>
+          </div>
+          <button onclick="openReviewModalForm();" class="btn-luxury-sapphire px-5 py-2.5 text-xs font-bold flex items-center gap-2 shadow-md">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span>Add Verified Review</span>
+          </button>
+        </div>
+
+        <div class="admin-table-container">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Patient</th>
+                <th>Treatment</th>
+                <th>Rating</th>
+                <th>Testimonial Review</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="reviews-table-body">
+              <!-- Injected by admin.js -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===================================================================== -->
+      <!-- TAB 4: SKINCARE BOUTIQUE PRODUCT MANAGER                             -->
+      <!-- ===================================================================== -->
+      <section id="tab-products" class="admin-tab-content space-y-6 hidden">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="font-serif text-xl font-bold text-slate-900">Skincare Boutique Product Catalog</h2>
+            <p class="text-xs text-slate-500">Manage cosmeceuticals, upload product images, set prices, and manage stock.</p>
+          </div>
+          <button onclick="openProductModalForm();" class="btn-luxury-sapphire px-5 py-2.5 text-xs font-bold flex items-center gap-2 shadow-md">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span>Add New Skincare Product</span>
+          </button>
+        </div>
+
+        <div class="admin-table-container">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Image</th>
+                <th>Product Name</th>
+                <th>Category</th>
+                <th>Price (LKR)</th>
+                <th>Stock</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="products-table-body">
+              <!-- Injected by admin.js -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===================================================================== -->
+      <!-- TAB 5: APPOINTMENT INQUIRIES & BOOKINGS LOG                          -->
+      <!-- ===================================================================== -->
+      <section id="tab-bookings" class="admin-tab-content space-y-6 hidden">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="font-serif text-xl font-bold text-slate-900">Consultation Bookings & Order Inquiries</h2>
+            <p class="text-xs text-slate-500">Log of all appointments submitted via website and WhatsApp concierge.</p>
+          </div>
+          <button onclick="clearBookingsLog();" class="btn-luxury-outline px-4 py-2 text-xs">
+            Clear Completed Log
+          </button>
+        </div>
+
+        <div class="admin-table-container">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Ref ID</th>
+                <th>Client Name & Phone</th>
+                <th>Requested Service / Order</th>
+                <th>Scheduled Date</th>
+                <th>Doctor</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="bookings-table-body">
+              <!-- Injected by admin.js -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: ADD / EDIT TREATMENT                                               -->
+  <!-- ========================================================================= -->
+  <div id="modal-treatment-form" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-xl w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 border-2 border-gold-400/40 shadow-2xl relative">
+      <button onclick="closeTreatmentModalForm();" class="absolute top-5 right-5 text-slate-400 hover:text-slate-900 p-2 rounded-full bg-cream-200">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <h3 id="treatment-form-title" class="font-serif text-2xl font-bold text-slate-900 mb-4">Add Medical Treatment</h3>
+
+      <form id="treatment-crud-form" class="space-y-4">
+        <input type="hidden" id="t-form-id">
+
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Treatment Name *</label>
+          <input type="text" id="t-form-name" required placeholder="e.g. Medical HydraFacial Deluxe" class="luxury-input w-full px-4 py-2.5 rounded-xl text-xs">
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Category *</label>
+            <select id="t-form-category" class="luxury-input w-full px-3 py-2.5 rounded-xl text-xs">
+              <option value="skin">Skin & Acne Revision</option>
+              <option value="laser">Laser Aesthetics</option>
+              <option value="hair">Hair PRP Restoration</option>
+              <option value="anti-aging">Anti-Aging & Injectables</option>
+              <option value="body">Wellness & IV Glow</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Tag / Badge</label>
+            <input type="text" id="t-form-tag" placeholder="e.g. Doctor Specialty" class="luxury-input w-full px-4 py-2.5 rounded-xl text-xs">
+          </div>
+        </div>
+
+        <!-- Photo Upload Zone -->
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Treatment Photo (Upload File or URL)</label>
+          <div class="image-upload-zone" onclick="document.getElementById('t-form-file').click();">
+            <input type="file" id="t-form-file" accept="image/*" class="hidden">
+            <div id="t-upload-preview" class="space-y-2">
+              <i data-lucide="upload-cloud" class="w-8 h-8 text-gold-600 mx-auto"></i>
+              <p class="text-xs text-slate-600">Click to upload photo from your computer</p>
+              <p class="text-[10px] text-slate-400">PNG, JPG, JPEG up to 5MB</p>
+            </div>
+            <img id="t-img-preview-tag" src="" alt="" class="max-h-36 mx-auto rounded-xl mt-2 hidden object-cover border border-gold-400">
+          </div>
+          <input type="text" id="t-form-image-url" placeholder="Or enter image URL / path (e.g. Photos/treatments/acne.jpg)" class="luxury-input w-full px-4 py-2 rounded-xl text-xs mt-2">
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Duration</label>
+            <input type="text" id="t-form-duration" placeholder="e.g. 45 - 60 Mins" class="luxury-input w-full px-4 py-2.5 rounded-xl text-xs">
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Downtime</label>
+            <input type="text" id="t-form-downtime" placeholder="e.g. Zero Downtime" class="luxury-input w-full px-4 py-2.5 rounded-xl text-xs">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Short Description *</label>
+          <textarea id="t-form-shortdesc" required rows="2" placeholder="Brief 1-2 sentence overview for the card..." class="luxury-input w-full px-4 py-2.5 rounded-xl text-xs"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Full Clinical Details</label>
+          <textarea id="t-form-fulldesc" rows="3" placeholder="Full medical description and mechanism of action..." class="luxury-input w-full px-4 py-2.5 rounded-xl text-xs"></textarea>
+        </div>
+
+        <div class="pt-3 flex gap-3">
+          <button type="button" onclick="closeTreatmentModalForm();" class="btn-luxury-outline px-5 py-2.5 text-xs">Cancel</button>
+          <button type="submit" class="btn-luxury-sapphire flex-1 py-2.5 text-xs font-bold uppercase tracking-wider">Save & Publish Treatment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: ADD / EDIT PRODUCT                                                 -->
+  <!-- ========================================================================= -->
+  <div id="modal-product-form" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-xl w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 border-2 border-gold-400/40 shadow-2xl relative">
+      <button onclick="closeProductModalForm();" class="absolute top-5 right-5 text-slate-400 hover:text-slate-900 p-2 rounded-full bg-cream-200">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <h3 id="product-form-title" class="font-serif text-2xl font-bold text-slate-900 mb-4">Add Skincare Product</h3>
+
+      <form id="product-crud-form" class="space-y-4">
+        <input type="hidden" id="p-form-id">
+
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Product Name *</label>
+          <input type="text" id="p-form-name" required placeholder="e.g. Cellular Radiance C+ Ferulic Elixir" class="luxury-input w-full px-4 py-2.5 rounded-xl text-xs">
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Category *</label>
+            <select id="p-form-category" class="luxury-input w-full px-3 py-2.5 rounded-xl text-xs">
+              <option value="brightening">Brightening & Pigmentation</option>
+              <option value="acne">Acne & Oil Control</option>
+              <option value="sun-protection">Sun Protection & Barrier</option>
+              <option value="hair">Hair & Scalp Restoration</option>
+              <option value="anti-aging">Anti-Aging & Rejuvenation</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Price (LKR) *</label>
+            <input type="number" id="p-form-price" required placeholder="e.g. 18500" class="luxury-input w-full px-4 py-2.5 rounded-xl text-xs">
+          </div>
+        </div>
+
+        <!-- Product Image Upload -->
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Product Image (Upload File or URL)</label>
+          <div class="image-upload-zone" onclick="document.getElementById('p-form-file').click();">
+            <input type="file" id="p-form-file" accept="image/*" class="hidden">
+            <div id="p-upload-preview" class="space-y-2">
+              <i data-lucide="upload-cloud" class="w-8 h-8 text-gold-600 mx-auto"></i>
+              <p class="text-xs text-slate-600">Click to upload product image</p>
+            </div>
+            <img id="p-img-preview-tag" src="" alt="" class="max-h-36 mx-auto rounded-xl mt-2 hidden object-cover border border-gold-400">
+          </div>
+          <input type="text" id="p-form-image-url" placeholder="Or image path / URL" class="luxury-input w-full px-4 py-2 rounded-xl text-xs mt-2">
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Volume / Size</label>
+            <input type="text" id="p-form-volume" placeholder="e.g. 30ml / 1.0 fl. oz." class="luxury-input w-full px-4 py-2.5 rounded-xl text-xs">
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Stock Quantity</label>
+            <input type="number" id="p-form-stock" value="20" class="luxury-input w-full px-4 py-2.5 rounded-xl text-xs">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Short Description *</label>
+          <textarea id="p-form-shortdesc" required rows="2" placeholder="Clinical formulation summary..." class="luxury-input w-full px-4 py-2.5 rounded-xl text-xs"></textarea>
+        </div>
+
+        <div class="pt-3 flex gap-3">
+          <button type="button" onclick="closeProductModalForm();" class="btn-luxury-outline px-5 py-2.5 text-xs">Cancel</button>
+          <button type="submit" class="btn-luxury-sapphire flex-1 py-2.5 text-xs font-bold uppercase tracking-wider">Save to Boutique</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: ADD / EDIT REVIEW                                                  -->
+  <!-- ========================================================================= -->
+  <div id="modal-review-form" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-xl w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 border-2 border-gold-400/40 shadow-2xl relative">
+      <button onclick="closeReviewModalForm();" class="absolute top-5 right-5 text-slate-400 hover:text-slate-900 p-2 rounded-full bg-cream-200">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <h3 id="review-form-title" class="font-serif text-2xl font-bold text-slate-900 mb-4">Add Patient Testimonial</h3>
+
+      <form id="review-crud-form" class="space-y-4">
+        <input type="hidden" id="r-form-id">
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Patient Name *</label>
+            <input type="text" id="r-form-name" required placeholder="e.g. Natasha Fernando" class="luxury-input w-full px-4 py-2.5 rounded-xl text-xs">
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Location</label>
+            <input type="text" id="r-form-location" placeholder="e.g. Colombo 07" class="luxury-input w-full px-4 py-2.5 rounded-xl text-xs">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Treatment Received *</label>
+            <input type="text" id="r-form-treatment" required placeholder="e.g. Medical HydraFacial Deluxe" class="luxury-input w-full px-4 py-2.5 rounded-xl text-xs">
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Rating (1 to 5)</label>
+            <select id="r-form-rating" class="luxury-input w-full px-3 py-2.5 rounded-xl text-xs">
+              <option value="5">⭐⭐⭐⭐⭐ (5 Stars)</option>
+              <option value="4">⭐⭐⭐⭐ (4 Stars)</option>
+              <option value="3">⭐⭐⭐ (3 Stars)</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Patient Quote / Review *</label>
+          <textarea id="r-form-quote" required rows="3" placeholder="Patient's genuine clinical feedback..." class="luxury-input w-full px-4 py-2.5 rounded-xl text-xs"></textarea>
+        </div>
+
+        <div class="pt-3 flex gap-3">
+          <button type="button" onclick="closeReviewModalForm();" class="btn-luxury-outline px-5 py-2.5 text-xs">Cancel</button>
+          <button type="submit" class="btn-luxury-sapphire flex-1 py-2.5 text-xs font-bold uppercase tracking-wider">Save Review</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="admin-toast-container"></div>
+
+  <!-- Data & Logic Scripts -->
+  <script src="assets/js/treatments-data.js"></script>
+  <script src="assets/js/products-data.js"></script>
+  <script src="assets/js/reviews-data.js"></script>
+  <script src="assets/js/admin.js"></script>
+</body>
+</html>

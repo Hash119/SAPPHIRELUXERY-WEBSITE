@@ -1,0 +1,143 @@
+/* ===================================================================
+   SAPPHIRE LUXURY AESTHETICS - ADMIN CMS DASHBOARD STYLES
+   Colombo 05, Sri Lanka | Medical Management & Photo Upload Suite
+   =================================================================== */
+
+.admin-sidebar {
+  background: #0C1A30;
+  border-right: 1px solid rgba(179, 142, 88, 0.3);
+}
+
+.admin-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #94A3B8;
+  transition: all 0.25s ease;
+  cursor: pointer;
+}
+
+.admin-nav-item:hover {
+  color: #FAF6F0;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.admin-nav-item.active {
+  color: #FFFFFF;
+  background: linear-gradient(135deg, rgba(179, 142, 88, 0.35) 0%, rgba(179, 142, 88, 0.15) 100%);
+  border-left: 3px solid #D4AF37;
+  font-weight: 600;
+}
+
+.admin-stat-card {
+  background: #FFFFFF;
+  border: 1px solid rgba(197, 168, 128, 0.3);
+  border-radius: 1.25rem;
+  padding: 1.5rem;
+  box-shadow: 0 10px 30px -10px rgba(12, 26, 48, 0.06);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.admin-stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 15px 35px -8px rgba(12, 26, 48, 0.1);
+  border-color: rgba(179, 142, 88, 0.6);
+}
+
+.admin-table-container {
+  background: #FFFFFF;
+  border: 1px solid rgba(197, 168, 128, 0.3);
+  border-radius: 1.25rem;
+  overflow: hidden;
+  box-shadow: 0 10px 30px -10px rgba(12, 26, 48, 0.05);
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.admin-table th {
+  background: #FAF6F0;
+  padding: 1rem 1.25rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #74572B;
+  border-bottom: 1px solid rgba(197, 168, 128, 0.3);
+}
+
+.admin-table td {
+  padding: 1rem 1.25rem;
+  font-size: 0.875rem;
+  color: #334155;
+  border-bottom: 1px solid rgba(197, 168, 128, 0.15);
+  vertical-align: middle;
+}
+
+.admin-table tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-table tr:hover td {
+  background: #FAF6F0/50;
+}
+
+/* Image Upload Dropzone Box */
+.image-upload-zone {
+  border: 2px dashed rgba(179, 142, 88, 0.5);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  text-align: center;
+  background: #FAF6F0/40;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.image-upload-zone:hover,
+.image-upload-zone.dragover {
+  border-color: #B38E58;
+  background: rgba(179, 142, 88, 0.1);
+}
+
+/* Toast Notifications */
+#admin-toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-toast {
+  background: #0C1A30;
+  color: #FFFFFF;
+  border-left: 4px solid #D4AF37;
+  padding: 14px 20px;
+  border-radius: 0.75rem;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.875rem;
+  animation: slideInToast 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideInToast {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

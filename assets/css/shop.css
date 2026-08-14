@@ -1,0 +1,136 @@
+/* ===================================================================
+   SAPPHIRE LUXURY AESTHETICS - SKINCARE BOUTIQUE STYLES
+   Colombo 05, Sri Lanka | Medical Cosmeceuticals & E-Commerce
+   =================================================================== */
+
+/* Boutique Hero Banner */
+.shop-hero-bg {
+  background: linear-gradient(135deg, #06101E 0%, #0C1A30 45%, #1E3E62 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.shop-hero-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 80% 20%, rgba(212, 175, 55, 0.15) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+/* Category Filter Pills */
+.shop-filter-btn {
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.shop-filter-btn.active {
+  background: linear-gradient(135deg, #C5A880 0%, #B38E58 50%, #8E6E38 100%);
+  color: #FFFFFF !important;
+  border-color: transparent;
+  box-shadow: 0 8px 20px -4px rgba(179, 142, 88, 0.45);
+}
+
+/* Product Card */
+.product-card {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(197, 168, 128, 0.35);
+  border-radius: 1.5rem;
+  overflow: hidden;
+  transition: all 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+.product-card:hover {
+  transform: translateY(-8px);
+  border-color: rgba(179, 142, 88, 0.7);
+  box-shadow: 0 25px 50px -12px rgba(12, 26, 48, 0.14), 0 0 25px rgba(197, 168, 128, 0.25);
+}
+
+.product-img-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1/1;
+  overflow: hidden;
+  background: #F5EFEB;
+}
+
+.product-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.product-card:hover .product-img-wrap img {
+  transform: scale(1.06);
+}
+
+/* Slide-out Cart Drawer */
+#cart-drawer {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cart-item-row {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem;
+  background: #FFFFFF;
+  border: 1px solid rgba(197, 168, 128, 0.25);
+  border-radius: 1rem;
+  transition: all 0.25s ease;
+}
+
+.cart-item-row:hover {
+  border-color: rgba(179, 142, 88, 0.5);
+  box-shadow: 0 4px 15px rgba(12, 26, 48, 0.05);
+}
+
+/* Free Delivery Bar */
+.delivery-progress-bar {
+  height: 6px;
+  background: #E6DCD2;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.delivery-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #D4AF37 0%, #25D366 100%);
+  border-radius: 9999px;
+  transition: width 0.4s ease;
+}
+
+/* Quick View Modal */
+.quickview-modal-content {
+  background: #FAF6F0;
+  border: 1.5px solid rgba(179, 142, 88, 0.45);
+  border-radius: 2rem;
+  box-shadow: 0 30px 80px -15px rgba(12, 26, 48, 0.3);
+}
+
+/* Floating Cart Trigger Pill */
+.cart-floating-trigger {
+  position: fixed;
+  bottom: 90px;
+  right: 26px;
+  z-index: 85;
+  background: #0C1A30;
+  color: #FFFFFF;
+  border: 2px solid #B38E58;
+  padding: 12px 18px;
+  border-radius: 9999px;
+  box-shadow: 0 10px 30px rgba(12, 26, 48, 0.35);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.cart-floating-trigger:hover {
+  background: #132742;
+  transform: translateY(-3px) scale(1.04);
+  box-shadow: 0 15px 35px rgba(179, 142, 88, 0.4);
+}
