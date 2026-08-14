@@ -77,15 +77,15 @@ body {
   box-shadow: 0 0 25px rgba(212, 175, 55, 0.85);
 }
 
-/* Global Typography & Font Family Harmonization (Fjör Avenue Aesthetic) */
+/* Global Typography & Font Family Harmonization (Sapphire Logo Palette) */
 h1, h2, h3, h4, .font-serif, .font-serif-luxury, .font-editorial {
   font-family: 'Cormorant Garamond', Georgia, serif;
-  color: #1C1C1C;
+  color: #0C1A30;
   letter-spacing: 0.025em;
 }
 
 p {
-  color: #4A4A4A;
+  color: #334155;
   font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
@@ -102,21 +102,21 @@ p {
   font-family: 'Outfit', sans-serif;
 }
 
-/* Fjör Avenue Aesthetic Typography & Badges */
+/* Sapphire Luxury Editorial Typography & Badges */
 .editorial-hero-title {
   font-family: 'Cormorant Garamond', Georgia, serif;
   font-weight: 300;
   letter-spacing: 0.04em;
   line-height: 1.06;
-  color: #1C1C1C;
+  color: #0C1A30;
 }
 
 .editorial-italic-highlight, .editorial-italic {
   font-family: 'Cormorant Garamond', Georgia, serif;
   font-style: italic;
-  font-weight: 400;
+  font-weight: 500;
   letter-spacing: 0.04em;
-  color: #A68254;
+  color: #B38E58;
 }
 
 .fjor-pill-badge {
@@ -126,29 +126,29 @@ p {
   padding: 0.35rem 1.1rem;
   border-radius: 9999px;
   background: #FFFFFF;
-  border: 1px solid #CACACA;
-  color: #1C1C1C;
+  border: 1px solid rgba(197, 168, 128, 0.45);
+  color: #74572B;
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.2em;
-  box-shadow: 0 4px 15px -3px rgba(28, 28, 28, 0.05);
+  box-shadow: 0 4px 15px -3px rgba(12, 26, 48, 0.06), 0 0 12px rgba(212, 175, 55, 0.1);
 }
 
 .luxury-eyebrow {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.35rem 1rem;
+  padding: 0.35rem 1.1rem;
   border-radius: 9999px;
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.18em;
   background: #FFFFFF;
-  color: #1C1C1C;
-  border: 1px solid #CACACA;
-  box-shadow: 0 4px 12px -2px rgba(28, 28, 28, 0.05);
+  color: #74572B;
+  border: 1px solid rgba(197, 168, 128, 0.45);
+  box-shadow: 0 4px 15px -2px rgba(12, 26, 48, 0.06), 0 0 15px rgba(212, 175, 55, 0.12);
 }
 
 /* Custom Posh Scrollbar */
