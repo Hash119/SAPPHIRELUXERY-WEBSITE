@@ -167,6 +167,48 @@ body {
   -webkit-text-fill-color: transparent;
 }
 
+/* Delicate Emerald-to-White Luxury Fade Lines */
+.emerald-white-fade-line {
+  height: 1.5px;
+  width: 100%;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 255, 255, 0.95) 15%, 
+    rgba(16, 185, 129, 0.85) 50%, 
+    rgba(255, 255, 255, 0.95) 85%, 
+    transparent 100%
+  );
+  position: relative;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.35);
+}
+
+.emerald-gold-fade-line {
+  height: 1.5px;
+  width: 100%;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 255, 255, 0.85) 10%, 
+    rgba(16, 185, 129, 0.75) 35%, 
+    rgba(212, 175, 55, 0.8) 65%, 
+    rgba(255, 255, 255, 0.85) 90%, 
+    transparent 100%
+  );
+  position: relative;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.25);
+}
+
+.emerald-glow-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px;
+  height: 6px;
+  background: #10B981;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #10B981, 0 0 16px rgba(16, 185, 129, 0.6);
+}
+
 /* Editorial Typography & Luxury Heading Embellishments */
 .editorial-italic {
   font-family: 'Cormorant Garamond', Georgia, serif;
