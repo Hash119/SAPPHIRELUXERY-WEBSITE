@@ -6,64 +6,56 @@
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap');
 
 :root {
-  /* Refined Cream White Bond Theme (Extracted from Photos/sample colour.webp) */
-  --bg-porcelain: #FAFAF0;
-  --bg-cream: #FAF6F0;
-  --bg-cream-soft: #F0E6DC;
-  --bg-matte-sand: #E6DCD2;
-  --bg-champagne: #DCD2C8;
-  --bg-beige-bond: #D6C8BC;
-  --bg-gray-bond: #D2C8BE;
+  /* Fjör Avenue Aesthetic Palette */
+  --bg-porcelain: #FFFFFF;
+  --bg-linen-light: #FAF8F5;
+  --bg-linen: #F4EFEB;
+  --bg-sand-warm: #EFE7DE;
+  --bg-blush-tint: #F7EFEA;
+  --bg-taupe-soft: #E5DDD2;
   
-  /* Text & Deep Accents */
-  --text-primary: #0C1A30;
-  --text-secondary: #334155;
-  --text-muted: #64748B;
-  --text-light: #94A3B8;
+  /* Text & Contrast (Fjör Noir & Espresso) */
+  --text-primary: #1C1C1C;
+  --text-secondary: #4A433B;
+  --text-muted: #73695F;
+  --text-light: #9C9185;
 
-  /* Luxury Sapphire Accents */
-  --sapphire-dark: #0A192F;
+  /* Luxury Accents */
+  --sapphire-dark: #0C1A30;
   --sapphire-navy: #132742;
-  --sapphire-accent: #1E3E62;
-  --sapphire-light: #2A4E80;
+  --gold-warm: #C5A880;
+  --gold-bronze: #B38E58;
+  --gold-deep: #8F6F3A;
+  --blush-rose: #DEB8AA;
+  --sage-tint: #7B8271;
   
-  /* Polished Cashmere Gold */
-  --gold-50: #FAFAF0;
-  --gold-100: #F0E6DC;
-  --gold-200: #E6DCD2;
-  --gold-300: #DCD2C8;
-  --gold-400: #D6C8BC;
-  --gold-500: #B38E58;
-  --gold-600: #93713D;
-  --gold-700: #74572B;
-  
-  /* Borders & Shadows */
-  --border-gold-subtle: rgba(197, 168, 128, 0.35);
-  --border-gold-solid: rgba(179, 142, 88, 0.45);
-  --shadow-posh: 0 20px 40px -15px rgba(12, 26, 48, 0.07), 0 0 15px rgba(197, 168, 128, 0.12);
-  --shadow-posh-hover: 0 25px 50px -12px rgba(12, 26, 48, 0.12), 0 0 25px rgba(197, 168, 128, 0.25);
+  /* Borders & Shadows (Fjör Minimalist Hairlines) */
+  --border-hairline: rgba(74, 67, 59, 0.12);
+  --border-gold-subtle: rgba(197, 168, 128, 0.38);
+  --border-gold-solid: rgba(179, 142, 88, 0.5);
+  --shadow-fjor: 0 15px 35px -10px rgba(28, 28, 28, 0.06), 0 0 15px rgba(197, 168, 128, 0.08);
+  --shadow-fjor-hover: 0 25px 50px -12px rgba(28, 28, 28, 0.12), 0 0 25px rgba(197, 168, 128, 0.2);
 }
 
 /* Base resets & typography */
 html {
   scroll-behavior: smooth;
   font-family: 'Plus Jakarta Sans', sans-serif;
-  color: #2A2621;
-  background-color: #FAF6F0;
+  color: #1C1C1C;
+  background-color: #FAF8F5;
 }
 
 body {
   overflow-x: hidden;
   position: relative;
-  color: #2A2621;
+  color: #1C1C1C;
   background: linear-gradient(180deg, 
-    #F5EFEB 0%, 
-    #FAF6F0 6%, 
-    #FDFCF9 16%, 
-    #FFFFFF 35%, 
-    #FFFFFF 65%, 
-    #FBF8F4 82%, 
-    #F5EFEB 100%
+    #F4EFEB 0%, 
+    #FAF8F5 5%, 
+    #FFFFFF 18%, 
+    #FFFFFF 50%, 
+    #FAF8F5 80%, 
+    #EFE7DE 100%
   );
 }
 
@@ -386,14 +378,14 @@ body {
   border: 1px solid rgba(197, 168, 128, 0.3);
 }
 
-/* Luxury Gold & Navy Buttons */
+/* Luxury Gold & Noir Buttons (Fjör Avenue Aesthetic) */
 .btn-luxury-gold {
   background: linear-gradient(135deg, #C5A880 0%, #B38E58 50%, #8E6E38 100%);
   color: #FFFFFF;
   font-weight: 600;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  font-size: 0.82rem;
+  font-size: 0.76rem;
   border-radius: 9999px;
   position: relative;
   overflow: hidden;
@@ -423,38 +415,41 @@ body {
 }
 
 .btn-luxury-sapphire {
-  background: #0C1A30;
-  color: #FDFBF7;
+  background: #1C1C1C;
+  color: #FAF8F5;
   font-weight: 600;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  font-size: 0.82rem;
+  font-size: 0.76rem;
   border-radius: 9999px;
+  border: 1px solid rgba(197, 168, 128, 0.35);
   transition: all 0.3s ease;
-  box-shadow: 0 8px 20px -4px rgba(12, 26, 48, 0.25);
+  box-shadow: 0 8px 20px -4px rgba(28, 28, 28, 0.25);
 }
 
 .btn-luxury-sapphire:hover {
-  background: #183153;
+  background: #0C1A30;
+  border-color: #D4AF37;
   color: #FFFFFF;
   transform: translateY(-2px);
-  box-shadow: 0 12px 25px -4px rgba(12, 26, 48, 0.35);
+  box-shadow: 0 12px 25px -4px rgba(12, 26, 48, 0.4);
 }
 
 .btn-luxury-outline {
-  border: 1.5px solid #B38E58;
-  color: #0C1A30;
+  border: 1px solid rgba(74, 67, 59, 0.28);
+  color: #1C1C1C;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  font-size: 0.84rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.85);
   transition: all 0.3s ease;
 }
 
 .btn-luxury-outline:hover {
-  background: #B38E58;
-  border-color: #B38E58;
+  background: #1C1C1C;
+  border-color: #1C1C1C;
   color: #FFFFFF;
   transform: translateY(-2px);
   box-shadow: 0 8px 20px -5px rgba(179, 142, 88, 0.35);
