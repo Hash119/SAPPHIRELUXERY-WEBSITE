@@ -903,23 +903,23 @@ p {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background: #075E54;
+  background: #044E43;
   color: #FFFFFF;
-  padding: 0.85rem 1.4rem;
+  padding: 0.85rem 1.45rem;
   border-radius: 9999px;
   font-size: 0.82rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   border: 1.5px solid rgba(255, 255, 255, 0.25);
-  box-shadow: 0 10px 25px -5px rgba(7, 94, 84, 0.4), 0 0 15px rgba(7, 94, 84, 0.3);
+  box-shadow: 0 10px 25px -5px rgba(4, 78, 67, 0.5), 0 0 18px rgba(4, 78, 67, 0.35);
   transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .whatsapp-float:hover {
-  background: #054C44;
+  background: #02332C;
   transform: translateY(-3px) scale(1.03);
-  box-shadow: 0 15px 35px -5px rgba(7, 94, 84, 0.6), 0 0 25px rgba(18, 140, 126, 0.5);
+  box-shadow: 0 15px 35px -5px rgba(4, 78, 67, 0.7), 0 0 25px rgba(7, 94, 84, 0.5);
   color: #FFFFFF;
 }
 
