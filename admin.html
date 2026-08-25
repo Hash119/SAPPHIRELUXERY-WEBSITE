@@ -863,7 +863,7 @@
         <!-- Video File Upload / Media Source -->
         <div>
           <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Video File (Upload MP4 / MOV / WebM or Direct Path)</label>
-          <div class="video-upload-zone" onclick="document.getElementById('reel-form-file').click();">
+          <label for="reel-form-file" class="video-upload-zone block cursor-pointer">
             <input type="file" id="reel-form-file" accept="video/mp4,video/webm,video/quicktime" class="hidden">
             <div id="reel-upload-preview" class="space-y-2">
               <i data-lucide="video" class="w-8 h-8 text-indigo-600 mx-auto"></i>
@@ -871,21 +871,21 @@
               <p class="text-[10px] text-slate-400">MP4, MOV, WebM (or enter video path below)</p>
             </div>
             <video id="reel-video-preview-tag" src="" controls class="max-h-44 mx-auto rounded-xl mt-3 hidden border border-gold-400 bg-black"></video>
-          </div>
+          </label>
           <input type="text" id="reel-form-video-url" placeholder="Or enter video file path / URL (e.g. Video/clinic-reel.mp4)" class="luxury-input w-full px-4 py-2 rounded-xl text-xs mt-2">
         </div>
 
         <!-- Thumbnail / Poster Image -->
         <div>
           <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Poster / Thumbnail Cover Image</label>
-          <div class="image-upload-zone" onclick="document.getElementById('reel-poster-file').click();">
+          <label for="reel-poster-file" class="image-upload-zone block cursor-pointer">
             <input type="file" id="reel-poster-file" accept="image/*" class="hidden">
             <div id="reel-poster-preview" class="space-y-1">
               <i data-lucide="image" class="w-6 h-6 text-gold-600 mx-auto"></i>
               <p class="text-xs text-slate-600">Click to upload thumbnail cover photo</p>
             </div>
             <img id="reel-poster-preview-tag" src="" alt="" class="max-h-28 mx-auto rounded-xl mt-2 hidden object-cover border border-gold-400">
-          </div>
+          </label>
           <input type="text" id="reel-form-poster-url" placeholder="Or poster image path (e.g. Photos/treatments/acne.jpg)" class="luxury-input w-full px-4 py-2 rounded-xl text-xs mt-2">
         </div>
 

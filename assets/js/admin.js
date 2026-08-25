@@ -1035,13 +1035,23 @@ function openReelModalForm(reelId = null) {
     if (posterUploadPreview) posterUploadPreview.classList.remove('hidden');
   }
 
-  if (modal) modal.classList.remove('hidden');
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+  }
   initLucide();
+}
+
+function editReel(reelId) {
+  openReelModalForm(reelId);
 }
 
 function closeReelModalForm() {
   const modal = document.getElementById('modal-reel-form');
-  if (modal) modal.classList.add('hidden');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+  }
 }
 
 function handleReelFormSubmit(event) {
@@ -1134,6 +1144,7 @@ function showToast(message) {
 
 // Explicit global window bindings for inline HTML onclick handlers
 window.openReelModalForm = openReelModalForm;
+window.editReel = editReel;
 window.closeReelModalForm = closeReelModalForm;
 window.handleReelFormSubmit = handleReelFormSubmit;
 window.deleteReel = deleteReel;
