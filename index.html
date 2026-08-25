@@ -597,7 +597,7 @@
       </div>
 
       <!-- Reels Timeline Grid -->
-      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6" data-aos="fade-up">
+      <div id="clinic-reels-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6" data-aos="fade-up">
 
         <!-- Reel 1: Live Video Player Reel (Hero Video) -->
         <div class="story-reel-card col-span-2 sm:col-span-2 lg:col-span-2 group" onclick="toggleStoryVideo();">
@@ -1936,8 +1936,65 @@
     </div>
   </div>
 
+  <!-- ========================================================================= -->
+  <!-- MODAL: INSTAGRAM/TIKTOK-STYLE CLINICAL REEL VIDEO PLAYER                  -->
+  <!-- ========================================================================= -->
+  <div id="reel-video-modal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-xl hidden flex items-center justify-center p-2 sm:p-4">
+    <div class="relative max-w-sm sm:max-w-md w-full h-[85vh] max-h-[780px] bg-slate-950 rounded-3xl overflow-hidden shadow-2xl border border-gold-500/30 flex flex-col justify-between">
+      
+      <!-- Video Element -->
+      <video id="modal-reel-video-player" playsinline loop class="absolute inset-0 w-full h-full object-cover z-0"></video>
+      <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80 pointer-events-none z-10"></div>
+
+      <!-- Top Header -->
+      <div class="relative z-20 p-4 sm:p-5 flex justify-between items-center text-white">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-full border border-gold-500 overflow-hidden bg-white">
+            <img src="Photos/Logo.jpg" alt="Logo" class="w-full h-full object-cover">
+          </div>
+          <div>
+            <span class="font-serif text-xs font-bold block">Sapphire Luxury</span>
+            <span id="modal-reel-category" class="text-[9px] uppercase tracking-wider text-gold-400 font-semibold block">Live Procedure</span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button id="modal-reel-mute-btn" onclick="toggleModalReelMute();" class="p-2 rounded-full bg-black/60 text-white hover:scale-110 transition-transform">
+            <i id="modal-reel-mute-icon" data-lucide="volume-2" class="w-4 h-4"></i>
+          </button>
+          <button onclick="closeStoryReelModal();" class="p-2 rounded-full bg-black/60 text-white hover:scale-110 transition-transform">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Bottom Info & CTA -->
+      <div class="relative z-20 p-5 space-y-3 text-white">
+        <div>
+          <span id="modal-reel-tag" class="text-[10px] uppercase font-bold tracking-widest text-gold-400">Dr. Indi • Clinical Protocol</span>
+          <h3 id="modal-reel-title" class="font-serif text-lg sm:text-xl font-bold leading-tight mt-0.5"></h3>
+          <p id="modal-reel-desc" class="text-xs text-slate-200 line-clamp-2 font-light mt-1"></p>
+        </div>
+
+        <div class="pt-2 flex gap-2">
+          <a id="modal-reel-wa-btn" href="https://wa.me/94777143626" target="_blank"
+            class="flex-1 bg-[#25D366] hover:bg-[#1EBE5D] text-white py-2.5 px-4 rounded-full font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition-transform hover:scale-[1.02]">
+            <i data-lucide="message-circle" class="w-4 h-4"></i>
+            <span>Consult on WhatsApp</span>
+          </a>
+          <button id="modal-reel-treatment-btn" onclick="openBookingFromReel();"
+            class="btn-luxury-gold px-4 py-2.5 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-lg">
+            <span>Book Now</span>
+            <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Application Scripts -->
   <script src="assets/js/treatments-data.js"></script>
+  <script src="assets/js/reels-data.js"></script>
   <script src="assets/js/products-data.js"></script>
   <script src="assets/js/reviews-data.js"></script>
   <script src="assets/js/app.js"></script>

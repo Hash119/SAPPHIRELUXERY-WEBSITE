@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initNavigation();
   initTreatmentsGrid();
   initHomeFeaturedProducts();
+  initClinicStories();
   initTreatmentModal();
   initSkinAdvisorQuiz();
   initBookingModal();
@@ -844,8 +845,160 @@ function initContactForm() {
 }
 
 /* -------------------------------------------------------------------------- */
-/* 12. Clinical Stories & Video Reel Controls                                */
+/* 12. Clinical Stories & Dynamic Video Reel Player                           */
 /* -------------------------------------------------------------------------- */
+let activeReelData = null;
+
+function initClinicStories() {
+  const container = document.getElementById('clinic-reels-grid');
+  if (!container) return;
+
+  const reels = typeof getStoredReels === 'function' ? getStoredReels() : (typeof DEFAULT_REELS_DATA !== 'undefined' ? DEFAULT_REELS_DATA : []);
+  if (!reels || reels.length === 0) return;
+
+  container.innerHTML = '';
+
+  reels.forEach((reel, index) => {
+    const isHero = index === 0;
+    const card = document.createElement('div');
+    card.className = `story-reel-card ${isHero ? 'col-span-2 sm:col-span-2 lg:col-span-2' : ''} group cursor-pointer`;
+    card.onclick = () => openStoryReel(reel.id);
+
+    if (isHero) {
+      card.innerHTML = `
+        <div class="story-progress-container">
+          <div class="story-progress-segment active"></div>
+          <div class="story-progress-segment active"></div>
+          <div class="story-progress-segment"></div>
+        </div>
+
+        <video id="clinic-main-video" autoplay loop muted playsinline poster="${reel.poster || 'Photos/Logo.jpg'}" class="w-full h-full object-cover">
+          <source src="${reel.videoUrl}" type="video/mp4">
+        </video>
+
+        <div class="story-gradient-overlay"></div>
+
+        <div class="absolute top-8 left-4 right-4 z-20 flex justify-between items-center">
+          <div class="flex items-center gap-2 bg-slate-900/80 backdrop-blur-md px-3 py-1 rounded-full border border-gold-400/30 text-white text-[11px] font-bold">
+            <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+            <span>${reel.tag || 'LIVE PROCEDURE REEL'}</span>
+          </div>
+          <button id="video-mute-btn" onclick="event.stopPropagation(); toggleVideoMute();"
+            class="w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center backdrop-blur-md border border-white/20 hover:scale-110 transition-transform">
+            <i id="video-mute-icon" data-lucide="volume-x" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <div class="absolute bottom-4 left-4 right-4 z-20 space-y-1.5">
+          <span class="text-[10px] uppercase font-bold tracking-widest text-gold-300">Dr. Indi • Clinical Protocol</span>
+          <h4 class="font-serif text-lg font-bold text-white leading-tight">
+            ${reel.title}
+          </h4>
+          <p class="text-xs text-slate-200 line-clamp-1 font-light">
+            ${reel.description}
+          </p>
+        </div>
+      `;
+    } else {
+      card.innerHTML = `
+        <div class="story-progress-container">
+          <div class="story-progress-segment active"></div>
+          <div class="story-progress-segment"></div>
+        </div>
+
+        <video preload="metadata" muted playsinline poster="${reel.poster || 'Photos/Logo.jpg'}" class="w-full h-full object-cover" onmouseenter="this.play().catch(()=>{})" onmouseleave="this.pause()">
+          <source src="${reel.videoUrl}" type="video/mp4">
+        </video>
+
+        <div class="story-gradient-overlay"></div>
+
+        <div class="absolute top-8 left-3 z-20">
+          <span class="text-[9px] uppercase font-bold px-2 py-0.5 rounded-full bg-black/70 text-gold-300 border border-gold-400/30 backdrop-blur-sm">
+            ${reel.category || 'Clinical Story'}
+          </span>
+        </div>
+
+        <div class="absolute bottom-3 left-3 right-3 z-20 space-y-0.5 text-white">
+          <h5 class="font-serif text-sm font-bold leading-tight line-clamp-1">${reel.title}</h5>
+          <p class="text-[10px] text-slate-300 line-clamp-1">${reel.description}</p>
+        </div>
+      `;
+    }
+
+    container.appendChild(card);
+  });
+
+  initLucide();
+}
+
+function openStoryReel(reelId) {
+  const reels = typeof getStoredReels === 'function' ? getStoredReels() : (typeof DEFAULT_REELS_DATA !== 'undefined' ? DEFAULT_REELS_DATA : []);
+  const reel = reels.find(r => r.id === reelId) || reels[0];
+  if (!reel) return;
+
+  activeReelData = reel;
+  const modal = document.getElementById('reel-video-modal');
+  const videoPlayer = document.getElementById('modal-reel-video-player');
+  const categoryEl = document.getElementById('modal-reel-category');
+  const tagEl = document.getElementById('modal-reel-tag');
+  const titleEl = document.getElementById('modal-reel-title');
+  const descEl = document.getElementById('modal-reel-desc');
+  const waBtn = document.getElementById('modal-reel-wa-btn');
+
+  if (categoryEl) categoryEl.textContent = reel.category || 'Live Procedure';
+  if (tagEl) tagEl.textContent = reel.tag || 'Dr. Indi • Clinical Protocol';
+  if (titleEl) titleEl.textContent = reel.title;
+  if (descEl) descEl.textContent = reel.description;
+
+  if (waBtn) {
+    const waMsg = `Hi Sapphire Luxury Aesthetics, I watched the video reel "${reel.title}" and would like to consult Dr. Indi regarding this treatment.`;
+    waBtn.href = `https://wa.me/94777143626?text=${encodeURIComponent(waMsg)}`;
+  }
+
+  if (videoPlayer) {
+    videoPlayer.src = reel.videoUrl;
+    videoPlayer.muted = false;
+    videoPlayer.play().catch(() => {
+      videoPlayer.muted = true;
+      videoPlayer.play();
+    });
+  }
+
+  if (modal) modal.classList.remove('hidden');
+  initLucide();
+}
+
+function closeStoryReelModal() {
+  const modal = document.getElementById('reel-video-modal');
+  const videoPlayer = document.getElementById('modal-reel-video-player');
+  if (videoPlayer) {
+    videoPlayer.pause();
+    videoPlayer.src = '';
+  }
+  if (modal) modal.classList.add('hidden');
+}
+
+function toggleModalReelMute() {
+  const videoPlayer = document.getElementById('modal-reel-video-player');
+  const icon = document.getElementById('modal-reel-mute-icon');
+  if (!videoPlayer) return;
+
+  videoPlayer.muted = !videoPlayer.muted;
+  if (icon) {
+    icon.setAttribute('data-lucide', videoPlayer.muted ? 'volume-x' : 'volume-2');
+    initLucide();
+  }
+}
+
+function openBookingFromReel() {
+  closeStoryReelModal();
+  if (activeReelData && activeReelData.treatmentId) {
+    openBookingWithTreatment(activeReelData.treatmentId);
+  } else {
+    openBookingModal();
+  }
+}
+
 function toggleStoryVideo() {
   const video = document.getElementById('clinic-main-video');
   if (!video) return;
@@ -868,3 +1021,4 @@ function toggleVideoMute() {
     initLucide();
   }
 }
+

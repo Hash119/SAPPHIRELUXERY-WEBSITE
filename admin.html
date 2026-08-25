@@ -171,6 +171,11 @@
             <span>Treatment & Photos</span>
           </button>
 
+          <button data-tab="reels" class="admin-nav-item w-full">
+            <i data-lucide="video" class="w-4 h-4 text-gold-400"></i>
+            <span>Clinical Reels & Videos</span>
+          </button>
+
           <button data-tab="reviews" class="admin-nav-item w-full">
             <i data-lucide="message-square-quote" class="w-4 h-4 text-gold-400"></i>
             <span>Reviews & Results</span>
@@ -258,7 +263,7 @@
       <section id="tab-overview" class="admin-tab-content space-y-8">
         
         <!-- KPI Summary Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
           <div class="admin-stat-card">
             <div class="flex justify-between items-start mb-2">
               <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Total Bookings</span>
@@ -267,7 +272,7 @@
               </div>
             </div>
             <div class="text-3xl font-bold font-serif text-slate-900" id="kpi-bookings-count">0</div>
-            <div class="text-[11px] text-emerald-600 font-semibold mt-1">Direct via VIP Concierge</div>
+            <div class="text-[11px] text-emerald-600 font-semibold mt-1">Direct via Concierge</div>
           </div>
 
           <div class="admin-stat-card">
@@ -283,59 +288,81 @@
 
           <div class="admin-stat-card">
             <div class="flex justify-between items-start mb-2">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Video Reels</span>
+              <div class="p-2 rounded-xl bg-indigo-500/10 text-indigo-600">
+                <i data-lucide="video" class="w-5 h-5"></i>
+              </div>
+            </div>
+            <div class="text-3xl font-bold font-serif text-slate-900" id="kpi-reels-count">0</div>
+            <div class="text-[11px] text-indigo-600 font-semibold mt-1">Clinical Stories</div>
+          </div>
+
+          <div class="admin-stat-card">
+            <div class="flex justify-between items-start mb-2">
               <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Boutique Products</span>
               <div class="p-2 rounded-xl bg-emerald-500/10 text-emerald-700">
                 <i data-lucide="shopping-bag" class="w-5 h-5"></i>
               </div>
             </div>
             <div class="text-3xl font-bold font-serif text-slate-900" id="kpi-products-count">0</div>
-            <div class="text-[11px] text-slate-500 font-semibold mt-1">Prescription Formulations</div>
+            <div class="text-[11px] text-slate-500 font-semibold mt-1">Prescriptions</div>
           </div>
 
           <div class="admin-stat-card">
             <div class="flex justify-between items-start mb-2">
-              <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Patient Satisfaction</span>
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Patient Rating</span>
               <div class="p-2 rounded-xl bg-amber-500/10 text-amber-600">
                 <i data-lucide="star" class="w-5 h-5"></i>
               </div>
             </div>
             <div class="text-3xl font-bold font-serif text-slate-900">5.0 / 5.0</div>
-            <div class="text-[11px] text-emerald-600 font-semibold mt-1">100% Verified Reviews</div>
+            <div class="text-[11px] text-emerald-600 font-semibold mt-1">100% Verified</div>
           </div>
         </div>
 
         <!-- Quick Action Shortcut Banners -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div class="p-6 rounded-2xl bg-gradient-to-br from-sapphire-900 to-sapphire-950 text-white shadow-lg space-y-3">
-            <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-gold-400">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div class="p-5 rounded-2xl bg-gradient-to-br from-sapphire-900 to-sapphire-950 text-white shadow-lg space-y-3">
+            <div class="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-gold-400">
               <i data-lucide="image-plus" class="w-5 h-5"></i>
             </div>
-            <h3 class="font-serif text-lg font-bold">Upload Treatment Photos</h3>
-            <p class="text-xs text-slate-300 font-light">Add new clinical procedures or update before-and-after cases displayed on the homepage.</p>
-            <button onclick="switchTab('treatments'); openTreatmentModalForm();" class="btn-luxury-gold px-4 py-2 text-xs">
-              + Add Treatment Photo
+            <h3 class="font-serif text-base font-bold">Treatment Photos</h3>
+            <p class="text-xs text-slate-300 font-light">Add clinical procedures and update before/after cases.</p>
+            <button onclick="switchTab('treatments'); openTreatmentModalForm();" class="btn-luxury-gold px-3.5 py-1.5 text-xs">
+              + Add Treatment
             </button>
           </div>
 
-          <div class="p-6 rounded-2xl bg-gradient-to-br from-cream-200 to-cream-300 border border-gold-400/40 shadow-sm space-y-3 text-slate-900">
-            <div class="w-10 h-10 rounded-xl bg-gold-500 text-white flex items-center justify-center">
+          <div class="p-5 rounded-2xl bg-gradient-to-br from-indigo-950 to-slate-900 text-white shadow-lg space-y-3 border border-indigo-500/30">
+            <div class="w-9 h-9 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
+              <i data-lucide="video" class="w-5 h-5"></i>
+            </div>
+            <h3 class="font-serif text-base font-bold">Upload Video Reels</h3>
+            <p class="text-xs text-indigo-200 font-light">Upload live procedure reels & clinical story videos.</p>
+            <button onclick="switchTab('reels'); openReelModalForm();" class="btn-luxury-sapphire px-3.5 py-1.5 text-xs text-gold-300 border border-gold-400/40">
+              + Upload Video Reel
+            </button>
+          </div>
+
+          <div class="p-5 rounded-2xl bg-gradient-to-br from-cream-200 to-cream-300 border border-gold-400/40 shadow-sm space-y-3 text-slate-900">
+            <div class="w-9 h-9 rounded-xl bg-gold-500 text-white flex items-center justify-center">
               <i data-lucide="package-plus" class="w-5 h-5"></i>
             </div>
-            <h3 class="font-serif text-lg font-bold">Add Skincare Product</h3>
-            <p class="text-xs text-slate-600 font-light">Publish new cosmeceuticals, upload product images, and set prices for the online boutique.</p>
-            <button onclick="switchTab('products'); openProductModalForm();" class="btn-luxury-sapphire px-4 py-2 text-xs">
-              + New Boutique Item
+            <h3 class="font-serif text-base font-bold">Skincare Products</h3>
+            <p class="text-xs text-slate-600 font-light">Manage cosmeceuticals and boutique catalogue.</p>
+            <button onclick="switchTab('products'); openProductModalForm();" class="btn-luxury-sapphire px-3.5 py-1.5 text-xs">
+              + New Product
             </button>
           </div>
 
-          <div class="p-6 rounded-2xl bg-white border border-gold-400/30 shadow-sm space-y-3">
-            <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+          <div class="p-5 rounded-2xl bg-white border border-gold-400/30 shadow-sm space-y-3">
+            <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
               <i data-lucide="message-circle" class="w-5 h-5"></i>
             </div>
-            <h3 class="font-serif text-lg font-bold text-slate-900">Direct Patient Leads</h3>
-            <p class="text-xs text-slate-600 font-light">Inspect all incoming consultation and product order drafts logged via WhatsApp.</p>
-            <button onclick="switchTab('bookings');" class="btn-luxury-outline px-4 py-2 text-xs">
-              View Inquiries Log →
+            <h3 class="font-serif text-base font-bold text-slate-900">Patient Inquiries</h3>
+            <p class="text-xs text-slate-600 font-light">Inspect all incoming bookings and patient leads.</p>
+            <button onclick="switchTab('bookings');" class="btn-luxury-outline px-3.5 py-1.5 text-xs">
+              View Log →
             </button>
           </div>
         </div>
@@ -399,6 +426,31 @@
               <!-- Injected by admin.js -->
             </tbody>
           </table>
+        </div>
+      </section>
+
+      <!-- ===================================================================== -->
+      <!-- TAB: CLINICAL REELS & VIDEO STORIES                                  -->
+      <!-- ===================================================================== -->
+      <section id="tab-reels" class="admin-tab-content space-y-6 hidden">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <div>
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-bold mb-1 border border-indigo-200">
+              <i data-lucide="video" class="w-3.5 h-3.5"></i>
+              <span>Live Social Timeline CMS</span>
+            </div>
+            <h2 class="font-serif text-xl font-bold text-slate-900">Clinical Reels & Video Stories</h2>
+            <p class="text-xs text-slate-500">Upload video files (MP4, WebM, MOV) or video links to display live procedure reels on the homepage timeline.</p>
+          </div>
+          <button onclick="openReelModalForm();" class="btn-luxury-sapphire px-5 py-2.5 text-xs font-bold flex items-center gap-2 shadow-md shrink-0">
+            <i data-lucide="video" class="w-4 h-4 text-gold-400"></i>
+            <span>+ Upload Video Reel</span>
+          </button>
+        </div>
+
+        <!-- Video Reels Admin Grid -->
+        <div id="admin-reels-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <!-- Injected dynamically by admin.js -->
         </div>
       </section>
 
@@ -763,11 +815,99 @@
     </div>
   </div>
 
+  <!-- ========================================================================= -->
+  <!-- MODAL: ADD / EDIT CLINICAL REEL / VIDEO                                   -->
+  <!-- ========================================================================= -->
+  <div id="modal-reel-form" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-xl w-full max-h-[92vh] overflow-y-auto p-6 sm:p-8 border-2 border-gold-400/40 shadow-2xl relative text-slate-800">
+      <button onclick="closeReelModalForm();" class="absolute top-5 right-5 text-slate-400 hover:text-slate-900 p-2 rounded-full bg-cream-200">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="flex items-center gap-3 mb-5 pb-3 border-b border-slate-100">
+        <div class="w-10 h-10 rounded-2xl bg-indigo-100 border border-indigo-200 text-indigo-700 flex items-center justify-center">
+          <i data-lucide="video" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h3 id="reel-form-title" class="font-serif text-2xl font-bold text-slate-900">Add Clinical Video Reel</h3>
+          <p class="text-xs text-slate-500">Upload video clip or link for live procedure showcase</p>
+        </div>
+      </div>
+
+      <form id="reel-crud-form" class="space-y-4" onsubmit="handleReelFormSubmit(event);">
+        <input type="hidden" id="reel-form-id">
+
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Reel Title / Procedure Name *</label>
+          <input type="text" id="reel-form-name" required placeholder="e.g. Medical HydraFacial 4-Stage Vortex Glow" class="luxury-input w-full px-4 py-2.5 rounded-xl text-xs">
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Category / Topic *</label>
+            <select id="reel-form-category" class="luxury-input w-full px-3 py-2.5 rounded-xl text-xs">
+              <option value="CLINICAL VLOG">Clinical Vlog & Consultation</option>
+              <option value="HYDRAFACIAL">HydraFacial Deluxe</option>
+              <option value="ACNE REVISION">Acne & Scar Revision</option>
+              <option value="HAIR RESTORATION">Hair & Scalp PRP</option>
+              <option value="LASER CLINIC">Laser Hair Removal</option>
+              <option value="BEFORE & AFTER">Patient Results & Before/After</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Badge Tag</label>
+            <input type="text" id="reel-form-tag" placeholder="e.g. LIVE PROCEDURE" value="LIVE PROCEDURE REEL" class="luxury-input w-full px-4 py-2.5 rounded-xl text-xs">
+          </div>
+        </div>
+
+        <!-- Video File Upload / Media Source -->
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Video File (Upload MP4 / MOV / WebM or Direct Path)</label>
+          <div class="video-upload-zone" onclick="document.getElementById('reel-form-file').click();">
+            <input type="file" id="reel-form-file" accept="video/mp4,video/webm,video/quicktime" class="hidden">
+            <div id="reel-upload-preview" class="space-y-2">
+              <i data-lucide="video" class="w-8 h-8 text-indigo-600 mx-auto"></i>
+              <p class="text-xs text-slate-700 font-semibold">Click or Drag & Drop Video Clip</p>
+              <p class="text-[10px] text-slate-400">MP4, MOV, WebM (or enter video path below)</p>
+            </div>
+            <video id="reel-video-preview-tag" src="" controls class="max-h-44 mx-auto rounded-xl mt-3 hidden border border-gold-400 bg-black"></video>
+          </div>
+          <input type="text" id="reel-form-video-url" placeholder="Or enter video file path / URL (e.g. Video/clinic-reel.mp4)" class="luxury-input w-full px-4 py-2 rounded-xl text-xs mt-2">
+        </div>
+
+        <!-- Thumbnail / Poster Image -->
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Poster / Thumbnail Cover Image</label>
+          <div class="image-upload-zone" onclick="document.getElementById('reel-poster-file').click();">
+            <input type="file" id="reel-poster-file" accept="image/*" class="hidden">
+            <div id="reel-poster-preview" class="space-y-1">
+              <i data-lucide="image" class="w-6 h-6 text-gold-600 mx-auto"></i>
+              <p class="text-xs text-slate-600">Click to upload thumbnail cover photo</p>
+            </div>
+            <img id="reel-poster-preview-tag" src="" alt="" class="max-h-28 mx-auto rounded-xl mt-2 hidden object-cover border border-gold-400">
+          </div>
+          <input type="text" id="reel-form-poster-url" placeholder="Or poster image path (e.g. Photos/treatments/acne.jpg)" class="luxury-input w-full px-4 py-2 rounded-xl text-xs mt-2">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Short Description *</label>
+          <textarea id="reel-form-desc" required rows="2" placeholder="Brief clinical procedure description for this video..." class="luxury-input w-full px-4 py-2.5 rounded-xl text-xs"></textarea>
+        </div>
+
+        <div class="pt-3 flex gap-3">
+          <button type="button" onclick="closeReelModalForm();" class="btn-luxury-outline px-5 py-2.5 text-xs">Cancel</button>
+          <button type="submit" class="btn-luxury-sapphire flex-1 py-2.5 text-xs font-bold uppercase tracking-wider">Save & Publish Video Reel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Toast Container -->
   <div id="admin-toast-container"></div>
 
   <!-- Data & Logic Scripts -->
   <script src="assets/js/treatments-data.js"></script>
+  <script src="assets/js/reels-data.js"></script>
   <script src="assets/js/products-data.js"></script>
   <script src="assets/js/reviews-data.js"></script>
   <script src="assets/js/admin.js"></script>

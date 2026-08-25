@@ -275,6 +275,7 @@ function switchTab(tabName) {
   const titles = {
     overview: "Dashboard Overview",
     treatments: "Medical Treatments & Procedure Photos",
+    reels: "Clinical Reels & Video Stories Timeline",
     reviews: "Patient Reviews & Testimonials",
     products: "Skincare Boutique Product Catalog",
     bookings: "Consultation Bookings & Inquiries Log"
@@ -290,6 +291,7 @@ function switchTab(tabName) {
 /* -------------------------------------------------------------------------- */
 function refreshAllData() {
   const treatments = getStoredTreatments();
+  const reels = typeof getStoredReels === 'function' ? getStoredReels() : [];
   const products = getStoredProducts();
   const reviews = getStoredReviews();
   const bookings = JSON.parse(localStorage.getItem('sapphire_bookings_log') || '[]');
@@ -297,14 +299,17 @@ function refreshAllData() {
   // Update KPIs
   const kpiBookings = document.getElementById('kpi-bookings-count');
   const kpiTreatments = document.getElementById('kpi-treatments-count');
+  const kpiReels = document.getElementById('kpi-reels-count');
   const kpiProducts = document.getElementById('kpi-products-count');
 
   if (kpiBookings) kpiBookings.textContent = bookings.length;
   if (kpiTreatments) kpiTreatments.textContent = treatments.length;
+  if (kpiReels) kpiReels.textContent = reels.length;
   if (kpiProducts) kpiProducts.textContent = products.length;
 
   renderOverviewRecentBookings(bookings);
   renderTreatmentsTable(treatments);
+  renderAdminReels(reels);
   renderReviewsTable(reviews);
   renderProductsTable(products);
   renderBookingsTable(bookings);
@@ -313,7 +318,7 @@ function refreshAllData() {
 }
 
 /* -------------------------------------------------------------------------- */
-/* 3. Image Upload to Base64 Converter                                       */
+/* 3. Image & Video Uploaders                                                */
 /* -------------------------------------------------------------------------- */
 function initImageUploaders() {
   // Treatment Image File
@@ -333,6 +338,53 @@ function initImageUploaders() {
           tPreview.src = base64;
           tPreview.classList.remove('hidden');
           if (tUploadText) tUploadText.classList.add('hidden');
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  // Reel Video File Uploader
+  const reelFile = document.getElementById('reel-form-file');
+  const reelUrl = document.getElementById('reel-form-video-url');
+  const reelVideoPreview = document.getElementById('reel-video-preview-tag');
+  const reelUploadText = document.getElementById('reel-upload-preview');
+
+  if (reelFile) {
+    reelFile.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        // If file is smaller than 20MB, read as DataURL, otherwise use object URL or path
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const base64 = event.target.result;
+          reelUrl.value = base64;
+          reelVideoPreview.src = base64;
+          reelVideoPreview.classList.remove('hidden');
+          if (reelUploadText) reelUploadText.classList.add('hidden');
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  // Reel Poster Image File Uploader
+  const reelPosterFile = document.getElementById('reel-poster-file');
+  const reelPosterUrl = document.getElementById('reel-form-poster-url');
+  const reelPosterPreview = document.getElementById('reel-poster-preview-tag');
+  const reelPosterText = document.getElementById('reel-poster-preview');
+
+  if (reelPosterFile) {
+    reelPosterFile.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const base64 = event.target.result;
+          reelPosterUrl.value = base64;
+          reelPosterPreview.src = base64;
+          reelPosterPreview.classList.remove('hidden');
+          if (reelPosterText) reelPosterText.classList.add('hidden');
         };
         reader.readAsDataURL(file);
       }
@@ -860,12 +912,194 @@ function initFormSubmissions() {
 }
 
 /* -------------------------------------------------------------------------- */
+/* 5. Clinical Reels CRUD Operations                                         */
+/* -------------------------------------------------------------------------- */
+function renderAdminReels(reels) {
+  const grid = document.getElementById('admin-reels-grid');
+  if (!grid) return;
+
+  grid.innerHTML = '';
+  if (!reels || reels.length === 0) {
+    grid.innerHTML = `
+      <div class="col-span-full py-12 text-center bg-white rounded-2xl border border-slate-200">
+        <i data-lucide="video-off" class="w-10 h-10 text-slate-400 mx-auto mb-2"></i>
+        <h4 class="font-serif text-lg font-bold text-slate-800">No Video Reels Published Yet</h4>
+        <p class="text-xs text-slate-500 mb-4">Click "+ Upload Video Reel" above to add your first clinical procedure video.</p>
+        <button onclick="openReelModalForm();" class="btn-luxury-sapphire px-4 py-2 text-xs">
+          + Add First Video Reel
+        </button>
+      </div>
+    `;
+    initLucide();
+    return;
+  }
+
+  reels.forEach(reel => {
+    const card = document.createElement('div');
+    card.className = 'admin-reel-card';
+    card.innerHTML = `
+      <div class="admin-reel-video-container group">
+        <video src="${reel.videoUrl}" poster="${reel.poster || 'Photos/Logo.jpg'}" preload="metadata" muted playsinline class="w-full h-full object-cover" onmouseenter="this.play().catch(()=>{})" onmouseleave="this.pause()"></video>
+        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 pointer-events-none"></div>
+        <div class="absolute top-3 left-3">
+          <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-indigo-600 text-white shadow-sm">
+            ${reel.category || 'CLINICAL REEL'}
+          </span>
+        </div>
+        <div class="absolute top-3 right-3">
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/60 text-gold-300 backdrop-blur-md">
+            ${reel.tag || 'LIVE REEL'}
+          </span>
+        </div>
+        <div class="absolute bottom-3 left-3 right-3 text-white">
+          <h4 class="font-serif text-sm font-bold line-clamp-1 leading-snug">${reel.title}</h4>
+          <p class="text-[11px] text-slate-200 line-clamp-1 mt-0.5 font-light">${reel.description}</p>
+        </div>
+      </div>
+
+      <div class="p-4 bg-white flex items-center justify-between gap-2 border-t border-slate-100 mt-auto">
+        <span class="text-[11px] text-slate-500 font-medium flex items-center gap-1">
+          <i data-lucide="play" class="w-3.5 h-3.5 text-gold-600"></i>
+          <span>Hover to preview</span>
+        </span>
+        <div class="flex items-center gap-1.5">
+          <button onclick="openReelModalForm('${reel.id}');" class="p-1.5 rounded-lg text-slate-600 hover:text-gold-700 hover:bg-cream-100 transition-colors" title="Edit Reel">
+            <i data-lucide="edit-3" class="w-4 h-4"></i>
+          </button>
+          <button onclick="deleteReel('${reel.id}');" class="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 transition-colors" title="Delete Reel">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+
+  initLucide();
+}
+
+function openReelModalForm(reelId = null) {
+  const modal = document.getElementById('modal-reel-form');
+  const titleEl = document.getElementById('reel-form-title');
+  const form = document.getElementById('reel-crud-form');
+  const idEl = document.getElementById('reel-form-id');
+  const nameEl = document.getElementById('reel-form-name');
+  const catEl = document.getElementById('reel-form-category');
+  const tagEl = document.getElementById('reel-form-tag');
+  const videoUrlEl = document.getElementById('reel-form-video-url');
+  const videoPreview = document.getElementById('reel-video-preview-tag');
+  const uploadPreview = document.getElementById('reel-upload-preview');
+  const posterUrlEl = document.getElementById('reel-form-poster-url');
+  const posterPreview = document.getElementById('reel-poster-preview-tag');
+  const posterUploadPreview = document.getElementById('reel-poster-preview');
+  const descEl = document.getElementById('reel-form-desc');
+
+  if (form) form.reset();
+
+  if (reelId) {
+    const reels = getStoredReels();
+    const reel = reels.find(r => r.id === reelId);
+    if (reel) {
+      if (titleEl) titleEl.textContent = 'Edit Clinical Video Reel';
+      if (idEl) idEl.value = reel.id;
+      if (nameEl) nameEl.value = reel.title || '';
+      if (catEl) catEl.value = reel.category || 'CLINICAL VLOG';
+      if (tagEl) tagEl.value = reel.tag || 'LIVE PROCEDURE REEL';
+      if (videoUrlEl) videoUrlEl.value = reel.videoUrl || '';
+      if (posterUrlEl) posterUrlEl.value = reel.poster || '';
+      if (descEl) descEl.value = reel.description || '';
+
+      if (videoPreview && reel.videoUrl) {
+        videoPreview.src = reel.videoUrl;
+        videoPreview.classList.remove('hidden');
+        if (uploadPreview) uploadPreview.classList.add('hidden');
+      }
+      if (posterPreview && reel.poster) {
+        posterPreview.src = reel.poster;
+        posterPreview.classList.remove('hidden');
+        if (posterUploadPreview) posterUploadPreview.classList.add('hidden');
+      }
+    }
+  } else {
+    if (titleEl) titleEl.textContent = 'Add Clinical Video Reel';
+    if (idEl) idEl.value = '';
+    if (videoPreview) {
+      videoPreview.src = '';
+      videoPreview.classList.add('hidden');
+    }
+    if (uploadPreview) uploadPreview.classList.remove('hidden');
+    if (posterPreview) {
+      posterPreview.src = '';
+      posterPreview.classList.add('hidden');
+    }
+    if (posterUploadPreview) posterUploadPreview.classList.remove('hidden');
+  }
+
+  if (modal) modal.classList.remove('hidden');
+  initLucide();
+}
+
+function closeReelModalForm() {
+  const modal = document.getElementById('modal-reel-form');
+  if (modal) modal.classList.add('hidden');
+}
+
+function handleReelFormSubmit(event) {
+  if (event) event.preventDefault();
+
+  const id = document.getElementById('reel-form-id').value || ('reel-' + Date.now());
+  const title = document.getElementById('reel-form-name').value.trim();
+  const category = document.getElementById('reel-form-category').value;
+  const tag = document.getElementById('reel-form-tag').value.trim() || 'LIVE PROCEDURE REEL';
+  const videoUrl = document.getElementById('reel-form-video-url').value.trim() || 'Video/clinic-reel.mp4';
+  const poster = document.getElementById('reel-form-poster-url').value.trim() || 'Photos/Logo.jpg';
+  const description = document.getElementById('reel-form-desc').value.trim();
+
+  const payload = {
+    id,
+    title,
+    category,
+    tag,
+    videoUrl,
+    poster,
+    description,
+    views: "1.5K",
+    featured: true
+  };
+
+  let reels = getStoredReels();
+  const index = reels.findIndex(r => r.id === id);
+  if (index !== -1) {
+    reels[index] = payload;
+    showToast('Video reel updated successfully!');
+  } else {
+    reels.unshift(payload);
+    showToast('New clinical video reel published to homepage!');
+  }
+
+  saveStoredReels(reels);
+  closeReelModalForm();
+  refreshAllData();
+}
+
+function deleteReel(reelId) {
+  if (!confirm('Are you sure you want to delete this clinical video reel?')) return;
+
+  let reels = getStoredReels();
+  reels = reels.filter(r => r.id !== reelId);
+  saveStoredReels(reels);
+  showToast('Video reel deleted successfully');
+  refreshAllData();
+}
+
+/* -------------------------------------------------------------------------- */
 /* 9. Reset System Data to Defaults                                          */
 /* -------------------------------------------------------------------------- */
 function resetAllDataToDefaults() {
-  if (!confirm('Reset all treatments, boutique products, reviews, and bookings to default factory data?')) return;
+  if (!confirm('Reset all treatments, reels, boutique products, reviews, and bookings to default factory data?')) return;
 
   localStorage.removeItem('sapphire_treatments_data');
+  localStorage.removeItem('sapphire_reels_data');
   localStorage.removeItem('sapphire_products_data');
   localStorage.removeItem('sapphire_reviews_data');
   localStorage.removeItem('sapphire_bookings_log');
