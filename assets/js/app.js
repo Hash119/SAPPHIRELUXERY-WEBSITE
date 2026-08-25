@@ -16,16 +16,38 @@ document.addEventListener('DOMContentLoaded', () => {
   initTestimonialsSlider();
   initFaqAccordion();
   initContactForm();
+  initSignatureVideos();
   initAos();
 });
 
 /* -------------------------------------------------------------------------- */
-/* 1. Initialize Icons & AOS                                                  */
+/* 1. Initialize Icons, Videos & AOS                                          */
 /* -------------------------------------------------------------------------- */
 function initLucide() {
   if (window.lucide) {
     lucide.createIcons();
   }
+}
+
+function initSignatureVideos() {
+  const vids = document.querySelectorAll('.signature-video-bg');
+  vids.forEach(v => {
+    v.muted = true;
+    v.setAttribute('playsinline', '');
+    const playPromise = v.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(() => {
+        // Autoplay prevented, retry on first user interaction
+        const startPlay = () => {
+          v.play();
+          document.removeEventListener('click', startPlay);
+          document.removeEventListener('touchstart', startPlay);
+        };
+        document.addEventListener('click', startPlay, { once: true });
+        document.addEventListener('touchstart', startPlay, { once: true });
+      });
+    }
+  });
 }
 
 function initAos() {

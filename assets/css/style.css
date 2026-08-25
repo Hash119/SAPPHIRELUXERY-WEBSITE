@@ -896,32 +896,178 @@ p {
   pointer-events: none;
 }
 
-/* Floating Dark Green WhatsApp Button */
-.whatsapp-float {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  z-index: 50;
+
+/* ===================================================================
+   SAPPHIRE SIGNATURE PROGRAMS - TREATMENT VIDEO CARDS
+   Inspired by Renewme Skin Clinic Signature Programs
+   =================================================================== */
+.signature-grid-container {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+@media (max-width: 1200px) {
+  .signature-grid-container {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .signature-grid-container {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 1rem;
+    padding-bottom: 1.5rem;
+    padding-top: 0.5rem;
+    -webkit-overflow-scrolling: touch;
+  }
+  .signature-grid-container::-webkit-scrollbar {
+    height: 4px;
+  }
+  .signature-grid-container::-webkit-scrollbar-thumb {
+    background: #EFA426;
+    border-radius: 4px;
+  }
+  .signature-grid-container::-webkit-scrollbar-track {
+    background: rgba(28, 78, 104, 0.1);
+  }
+  .signature-video-card {
+    flex: 0 0 280px;
+    scroll-snap-align: start;
+  }
+}
+
+.signature-video-card {
+  position: relative;
+  height: 460px;
+  border-radius: 1.5rem;
+  overflow: hidden;
+  border: 1.5px solid rgba(239, 164, 38, 0.35);
+  box-shadow: 0 12px 35px -8px rgba(18, 55, 74, 0.18);
+  background-color: #0A2534;
+  cursor: pointer;
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateY(0);
+}
+
+.signature-video-card:hover {
+  transform: translateY(-8px);
+  border-color: rgba(239, 164, 38, 0.85);
+  box-shadow: 0 22px 50px -10px rgba(18, 55, 74, 0.35), 0 0 25px rgba(239, 164, 38, 0.35);
+}
+
+.signature-video-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+.signature-video-card:hover .signature-video-bg {
+  transform: scale(1.06);
+}
+
+.signature-scrim-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, 
+    rgba(10, 37, 52, 0.65) 0%, 
+    rgba(10, 37, 52, 0.15) 28%, 
+    rgba(10, 37, 52, 0.45) 55%, 
+    rgba(10, 37, 52, 0.94) 90%,
+    rgba(10, 37, 52, 0.99) 100%
+  );
+  z-index: 10;
+  pointer-events: none;
+  transition: background 0.4s ease;
+}
+
+.signature-video-card:hover .signature-scrim-gradient {
+  background: linear-gradient(180deg, 
+    rgba(10, 37, 52, 0.55) 0%, 
+    rgba(10, 37, 52, 0.05) 28%, 
+    rgba(10, 37, 52, 0.35) 55%, 
+    rgba(10, 37, 52, 0.92) 85%,
+    rgba(10, 37, 52, 0.98) 100%
+  );
+}
+
+.signature-card-content {
+  position: relative;
+  z-index: 20;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1.5rem;
+}
+
+.signature-top-badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  background: #044E43;
-  color: #FFFFFF;
-  padding: 0.85rem 1.45rem;
+  gap: 0.4rem;
+  background: rgba(10, 37, 52, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(239, 164, 38, 0.5);
+  padding: 0.35rem 0.85rem;
   border-radius: 9999px;
-  font-size: 0.82rem;
+  color: #FACF85;
+  font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  border: 1.5px solid rgba(255, 255, 255, 0.25);
-  box-shadow: 0 10px 25px -5px rgba(4, 78, 67, 0.5), 0 0 18px rgba(4, 78, 67, 0.35);
-  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.whatsapp-float:hover {
-  background: #02332C;
-  transform: translateY(-3px) scale(1.03);
-  box-shadow: 0 15px 35px -5px rgba(4, 78, 67, 0.7), 0 0 25px rgba(7, 94, 84, 0.5);
+.signature-play-indicator {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  background: rgba(239, 164, 38, 0.2);
+  border: 1px solid rgba(239, 164, 38, 0.6);
   color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(6px);
+  transition: all 0.35s ease;
 }
+
+.signature-video-card:hover .signature-play-indicator {
+  background: #EFA426;
+  color: #0A2534;
+  transform: scale(1.15);
+  box-shadow: 0 0 15px rgba(239, 164, 38, 0.7);
+}
+
+.signature-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.65rem 1rem;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #EFA426 0%, #D97706 100%);
+  color: #0A2534;
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 15px rgba(239, 164, 38, 0.35);
+  transition: all 0.3s ease;
+}
+
+.signature-video-card:hover .signature-cta-btn {
+  background: linear-gradient(135deg, #F5B853 0%, #EFA426 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(239, 164, 38, 0.55);
+}
+
 
