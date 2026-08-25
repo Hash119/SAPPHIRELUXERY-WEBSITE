@@ -68,7 +68,7 @@ const DEFAULT_REELS_DATA = [
 
 function getStoredReels() {
   const saved = localStorage.getItem('sapphire_reels_data');
-  if (saved) {
+  if (saved !== null) {
     try {
       return JSON.parse(saved);
     } catch (e) {
