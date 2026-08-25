@@ -141,3 +141,42 @@
     transform: translateY(0);
   }
 }
+
+/* Admin Login Aesthetics */
+.admin-login-backdrop {
+  background: radial-gradient(circle at 50% 20%, #164259 0%, #0A2534 50%, #06101E 100%);
+}
+
+.login-glass-card {
+  background: rgba(12, 26, 48, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.6), 0 0 40px rgba(179, 142, 88, 0.15);
+}
+
+.login-input {
+  background: rgba(6, 16, 30, 0.6);
+  border: 1px solid rgba(179, 142, 88, 0.35);
+  color: #FFFFFF;
+  transition: all 0.3s ease;
+}
+
+.login-input:focus {
+  background: rgba(6, 16, 30, 0.9);
+  border-color: #EFA426;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(239, 164, 38, 0.2);
+}
+
+.shake-animation {
+  animation: shake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes shake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
+}
+

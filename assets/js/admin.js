@@ -1,23 +1,240 @@
 /**
  * Sapphire Luxury Aesthetics - Admin CMS & Management Script
- * Live CRUD, Image Uploads, and LocalStorage Synchronization
+ * Live CRUD, Image Uploads, LocalStorage Synchronization & Security Guard
  */
 
+const DEFAULT_ADMIN_USER = 'drindi@85';
+const DEFAULT_ADMIN_PASS = 'Sapphire@2026';
+
 let currentAdminTab = 'overview';
+let isCMSInitialized = false;
 
 document.addEventListener('DOMContentLoaded', () => {
   initLucide();
+  initAdminAuth();
+});
+
+function getAdminCredentials() {
+  const saved = localStorage.getItem('sapphire_admin_creds');
+  if (saved) {
+    try {
+      return JSON.parse(saved);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  return { user: DEFAULT_ADMIN_USER, pass: DEFAULT_ADMIN_PASS };
+}
+
+function isAuthenticated() {
+  return sessionStorage.getItem('sapphire_admin_auth') === 'true' || 
+         localStorage.getItem('sapphire_admin_auth') === 'true';
+}
+
+function initAdminAuth() {
+  const loginScreen = document.getElementById('admin-login-screen');
+  const appLayout = document.getElementById('admin-app-layout');
+
+  if (isAuthenticated()) {
+    if (loginScreen) loginScreen.classList.add('hidden');
+    if (appLayout) appLayout.classList.remove('hidden');
+    bootstrapCMS();
+  } else {
+    if (loginScreen) loginScreen.classList.remove('hidden');
+    if (appLayout) appLayout.classList.add('hidden');
+  }
+}
+
+function bootstrapCMS() {
+  if (isCMSInitialized) return;
+  isCMSInitialized = true;
+  
   initAdminNavigation();
   initImageUploaders();
   initFormSubmissions();
   refreshAllData();
-});
+  initLucide();
+}
+
+function handleAdminLogin(event) {
+  if (event) event.preventDefault();
+
+  const userEl = document.getElementById('login-username');
+  const passEl = document.getElementById('login-password');
+  const rememberEl = document.getElementById('login-remember');
+  const errorMsg = document.getElementById('login-error-msg');
+  const errorText = document.getElementById('login-error-text');
+  const cardBox = document.getElementById('login-card-box');
+  const submitBtn = document.getElementById('btn-login-submit');
+
+  const enteredUser = userEl ? userEl.value.trim() : '';
+  const enteredPass = passEl ? passEl.value : '';
+
+  const creds = getAdminCredentials();
+
+  if (enteredUser === creds.user && enteredPass === creds.pass) {
+    // Authentication successful
+    if (errorMsg) errorMsg.classList.add('hidden');
+
+    if (submitBtn) {
+      submitBtn.innerHTML = `
+        <span class="inline-block w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></span>
+        <span>Authenticating...</span>
+      `;
+    }
+
+    setTimeout(() => {
+      const isRemember = rememberEl && rememberEl.checked;
+      if (isRemember) {
+        localStorage.setItem('sapphire_admin_auth', 'true');
+      } else {
+        sessionStorage.setItem('sapphire_admin_auth', 'true');
+      }
+
+      const loginScreen = document.getElementById('admin-login-screen');
+      const appLayout = document.getElementById('admin-app-layout');
+
+      if (loginScreen) loginScreen.classList.add('hidden');
+      if (appLayout) appLayout.classList.remove('hidden');
+
+      bootstrapCMS();
+      showToast('Welcome Dr. Indi! Admin Portal unlocked successfully.');
+      
+      if (submitBtn) {
+        submitBtn.innerHTML = `
+          <i data-lucide="shield-check" class="w-4 h-4"></i>
+          <span>Unlock Admin Portal</span>
+        `;
+        initLucide();
+      }
+    }, 400);
+
+  } else {
+    // Authentication failed
+    if (errorMsg && errorText) {
+      errorText.textContent = 'Invalid credentials. Please enter your correct username & password.';
+      errorMsg.classList.remove('hidden');
+    }
+    if (cardBox) {
+      cardBox.classList.remove('shake-animation');
+      void cardBox.offsetWidth; // Trigger reflow
+      cardBox.classList.add('shake-animation');
+    }
+    if (passEl) {
+      passEl.value = '';
+      passEl.focus();
+    }
+    initLucide();
+  }
+}
+
+function handleAdminLogout() {
+  if (!confirm('Are you sure you want to log out from Sapphire CMS?')) return;
+
+  sessionStorage.removeItem('sapphire_admin_auth');
+  localStorage.removeItem('sapphire_admin_auth');
+
+  const appLayout = document.getElementById('admin-app-layout');
+  const loginScreen = document.getElementById('admin-login-screen');
+  const passEl = document.getElementById('login-password');
+
+  if (appLayout) appLayout.classList.add('hidden');
+  if (loginScreen) loginScreen.classList.remove('hidden');
+  if (passEl) passEl.value = '';
+
+  isCMSInitialized = false;
+  initLucide();
+  showToast('You have been logged out securely.');
+}
+
+function togglePasswordVisibility(inputId, iconId) {
+  const input = document.getElementById(inputId);
+  const icon = document.getElementById(iconId);
+  if (!input) return;
+
+  if (input.type === 'password') {
+    input.type = 'text';
+    if (icon) icon.setAttribute('data-lucide', 'eye-off');
+  } else {
+    input.type = 'password';
+    if (icon) icon.setAttribute('data-lucide', 'eye');
+  }
+  initLucide();
+}
+
+function openChangePasswordModal() {
+  const modal = document.getElementById('modal-change-password');
+  const userCreds = getAdminCredentials();
+  const newUserInput = document.getElementById('new-user-input');
+  const alertEl = document.getElementById('pwd-change-alert');
+  
+  if (alertEl) alertEl.classList.add('hidden');
+  if (newUserInput) newUserInput.value = userCreds.user;
+  
+  const form = document.getElementById('form-change-password');
+  if (form) form.reset();
+  if (newUserInput) newUserInput.value = userCreds.user;
+
+  if (modal) modal.classList.remove('hidden');
+  initLucide();
+}
+
+function closeChangePasswordModal() {
+  const modal = document.getElementById('modal-change-password');
+  if (modal) modal.classList.add('hidden');
+}
+
+function handleChangePasswordSubmit(event) {
+  if (event) event.preventDefault();
+
+  const currentPwd = document.getElementById('current-pwd-input').value;
+  const newUser = document.getElementById('new-user-input').value.trim();
+  const newPwd = document.getElementById('new-pwd-input').value;
+  const confirmPwd = document.getElementById('confirm-new-pwd-input').value;
+  const alertEl = document.getElementById('pwd-change-alert');
+
+  const creds = getAdminCredentials();
+
+  if (currentPwd !== creds.pass) {
+    if (alertEl) {
+      alertEl.textContent = 'Current password is incorrect!';
+      alertEl.className = 'mb-4 p-3 rounded-xl text-xs font-medium bg-rose-100 text-rose-800 border border-rose-300 block';
+    }
+    return;
+  }
+
+  if (newPwd !== confirmPwd) {
+    if (alertEl) {
+      alertEl.textContent = 'New passwords do not match!';
+      alertEl.className = 'mb-4 p-3 rounded-xl text-xs font-medium bg-rose-100 text-rose-800 border border-rose-300 block';
+    }
+    return;
+  }
+
+  if (newPwd.length < 6) {
+    if (alertEl) {
+      alertEl.textContent = 'Password must be at least 6 characters long!';
+      alertEl.className = 'mb-4 p-3 rounded-xl text-xs font-medium bg-rose-100 text-rose-800 border border-rose-300 block';
+    }
+    return;
+  }
+
+  // Save new credentials
+  localStorage.setItem('sapphire_admin_creds', JSON.stringify({
+    user: newUser,
+    pass: newPwd
+  }));
+
+  closeChangePasswordModal();
+  showToast('Security credentials updated successfully!');
+}
 
 function initLucide() {
   if (window.lucide) {
     lucide.createIcons();
   }
 }
+
 
 /* -------------------------------------------------------------------------- */
 /* 1. Navigation & Tab Switching                                             */
