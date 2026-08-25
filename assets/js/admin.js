@@ -1131,3 +1131,25 @@ function showToast(message) {
     setTimeout(() => toast.remove(), 300);
   }, 3500);
 }
+
+// Explicit global window bindings for inline HTML onclick handlers
+window.openReelModalForm = openReelModalForm;
+window.closeReelModalForm = closeReelModalForm;
+window.handleReelFormSubmit = handleReelFormSubmit;
+window.deleteReel = deleteReel;
+window.openTreatmentModalForm = openTreatmentModalForm;
+window.closeTreatmentModalForm = closeTreatmentModalForm;
+window.openProductModalForm = openProductModalForm;
+window.closeProductModalForm = closeProductModalForm;
+window.openReviewModalForm = openReviewModalForm;
+window.closeReviewModalForm = closeReviewModalForm;
+window.openChangePasswordModal = openChangePasswordModal;
+window.closeChangePasswordModal = closeChangePasswordModal;
+window.handleChangePasswordSubmit = handleChangePasswordSubmit;
+window.handleAdminLogin = handleAdminLogin;
+window.handleAdminLogout = handleAdminLogout;
+window.togglePasswordVisibility = togglePasswordVisibility;
+window.resetAllDataToDefaults = resetAllDataToDefaults;
+window.switchTab = switchTab;
+window.showToast = showToast;
+
