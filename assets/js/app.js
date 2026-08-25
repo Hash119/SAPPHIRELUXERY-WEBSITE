@@ -999,26 +999,47 @@ function openBookingFromReel() {
   }
 }
 
-function toggleStoryVideo() {
+function toggleStoryVideo(e) {
+  if (e && e.stopPropagation) e.stopPropagation();
   const video = document.getElementById('clinic-main-video');
   if (!video) return;
 
   if (video.paused) {
-    video.play();
+    video.play().catch(() => {});
   } else {
     video.pause();
   }
 }
 
-function toggleVideoMute() {
+function toggleVideoMute(e) {
+  if (e && e.stopPropagation) e.stopPropagation();
   const video = document.getElementById('clinic-main-video');
   const icon = document.getElementById('video-mute-icon');
   if (!video) return;
 
   video.muted = !video.muted;
+  if (!video.muted) {
+    video.play().catch(() => {});
+  }
+  
   if (icon) {
     icon.setAttribute('data-lucide', video.muted ? 'volume-x' : 'volume-2');
     initLucide();
   }
 }
+
+// Global window bindings for inline HTML onclick handlers
+window.toggleStoryVideo = toggleStoryVideo;
+window.toggleVideoMute = toggleVideoMute;
+window.openStoryReel = openStoryReel;
+window.closeStoryReelModal = closeStoryReelModal;
+window.toggleModalReelMute = toggleModalReelMute;
+window.openBookingFromReel = openBookingFromReel;
+window.openBookingModal = openBookingModal;
+window.openBookingWithTreatment = openBookingWithTreatment;
+window.openTreatmentModal = openTreatmentModal;
+window.closeTreatmentModal = closeTreatmentModal;
+window.openQuizModal = openQuizModal;
+window.closeQuizModal = closeQuizModal;
+
 
