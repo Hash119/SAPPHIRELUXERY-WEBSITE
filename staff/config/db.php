@@ -20,6 +20,14 @@ try {
         PDO::ATTR_EMULATE_PREPARES   => true,
     ];
     $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
+
+    // Auto-migrate plain_token column if not yet present
+    try {
+        $cols = $pdo->query("SHOW COLUMNS FROM employees LIKE 'plain_token'")->fetchAll();
+        if (empty($cols)) {
+            $pdo->exec("ALTER TABLE employees ADD COLUMN plain_token VARCHAR(255) NULL DEFAULT '123456' AFTER password");
+        }
+    } catch (Exception $ign) {}
 } catch (PDOException $e) {
     // If running in development or before configuring Hostinger credentials, show a friendly setup message
     $db_connection_error = $e->getMessage();

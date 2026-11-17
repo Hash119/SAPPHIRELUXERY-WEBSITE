@@ -23,6 +23,12 @@ function require_login() {
         header('Location: index.php');
         exit;
     }
+    // Enforce mandatory password change if still on default password
+    $curPage = basename($_SERVER['PHP_SELF'] ?? '');
+    if (!empty($_SESSION['must_change_password']) && $curPage !== 'change_password.php' && $curPage !== 'logout.php') {
+        header('Location: change_password.php');
+        exit;
+    }
 }
 
 function require_admin() {

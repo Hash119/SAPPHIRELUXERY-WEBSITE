@@ -38,37 +38,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = "Please enter both ID/Email and Password.";
     } elseif (isset($pdo)) {
         try {
-            // Find employee by Machine ID, Employee Code, or Email
+            $cleanId = trim($loginId);
+            $idNum = is_numeric($cleanId) ? (int)$cleanId : -1;
+            $pad4 = is_numeric($cleanId) ? str_pad($idNum, 4, '0', STR_PAD_LEFT) : $cleanId;
+            $pad3 = is_numeric($cleanId) ? str_pad($idNum, 3, '0', STR_PAD_LEFT) : $cleanId;
+            $emp4 = 'EMP' . $pad4;
+            $emp3 = 'EMP' . $pad3;
+
+            // Find employee by Machine ID, Employee Code (0004, 4, EMP0004), or Email
             $stmt = $pdo->prepare("
                 SELECT * FROM employees 
-                WHERE (machine_user_id = ? OR emp_no = ? OR email = ?) 
+                WHERE (
+                    machine_user_id = ? 
+                    OR emp_no = ? 
+                    OR emp_no = ? 
+                    OR emp_no = ? 
+                    OR emp_no = ? 
+                    OR emp_no = ? 
+                    OR email = ?
+                ) 
                 LIMIT 1
             ");
-            $idNum = is_numeric($loginId) ? (int)$loginId : -1;
-            $stmt->execute([$idNum, $loginId, $loginId]);
+            $stmt->execute([$idNum, $cleanId, $pad4, $pad3, $emp4, $emp3, $cleanId]);
             $user = $stmt->fetch();
 
             if ($user) {
-                // Check if account is active
+                // Check if account is active or inactive/terminated
                 if ($user['status'] !== 'active') {
-                    $error = "Your staff account has been set to Inactive. Please contact Administrator/HR.";
+                    $error = "Access Denied: Your staff account has been Terminated / Deactivated. Access to the Sapphire portal is revoked. Please contact HR / Management.";
                 } else {
                     $passwordValid = false;
                     
                     // Verify BCrypt hash or plain text fallback (with auto upgrade)
                     if (password_verify($password, $user['password'])) {
                         $passwordValid = true;
-                    } elseif ($password === $user['password'] || ($password === '123456' && $user['role'] === 'employee') || ($password === 'admin123' && $user['role'] === 'admin')) {
+                    } elseif ($password === $user['password'] || ($password === '123456' && $user['role'] === 'employee') || ($password === 'admin123' && $user['role'] === 'admin') || (!empty($user['plain_token']) && $password === $user['plain_token'])) {
                         $passwordValid = true;
-                        // Auto-upgrade to bcrypt
+                        // Auto-upgrade to bcrypt and record plain_token
                         $newHash = password_hash($password, PASSWORD_DEFAULT);
-                        $upStmt = $pdo->prepare("UPDATE employees SET password = ? WHERE id = ?");
-                        $upStmt->execute([$newHash, $user['id']]);
+                        try {
+                            $upStmt = $pdo->prepare("UPDATE employees SET password = ?, plain_token = ? WHERE id = ?");
+                            $upStmt->execute([$newHash, $password, $user['id']]);
+                        } catch (Exception $e) {
+                            $upStmt = $pdo->prepare("UPDATE employees SET password = ? WHERE id = ?");
+                            $upStmt->execute([$newHash, $user['id']]);
+                        }
                     }
 
                     if ($passwordValid) {
                         $_SESSION['user_id'] = $user['id'];
                         $_SESSION['user'] = $user;
+
+                        // Check if employee is using default password (123456)
+                        if ($password === '123456' && $user['role'] === 'employee') {
+                            $_SESSION['must_change_password'] = true;
+                            header('Location: change_password.php?first_login=1');
+                            exit;
+                        }
 
                         if (in_array($user['role'], ['admin', 'manager', 'supervisor'])) {
                             header('Location: dashboard.php?success=Welcome back, ' . urlencode($user['calling_name'] ?? $user['name']));
@@ -81,7 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
             } else {
-                $error = "User not found with ID/Email: " . htmlspecialchars($loginId);
+                $error = "User not found with ID/Email: " . htmlspecialchars($loginId) . " (Enter ID e.g. 0004 or 4)";
             }
         } catch (PDOException $e) {
             $error = "System error: " . $e->getMessage();
@@ -141,16 +167,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         html:not(.dark) .bg-slate-900\/80 {
             background-color: #ffffff !important;
-            border-color: #e2e8f0 !important;
+            border-color: #cbd5e1 !important;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
         }
         html:not(.dark) .bg-slate-950\/70,
-        html:not(.dark) .bg-slate-950\/50 {
+        html:not(.dark) .bg-slate-950\/50,
+        html:not(.dark) .bg-slate-950 {
             background-color: #f8fafc !important;
             border-color: #cbd5e1 !important;
+        }
+        html:not(.dark) label {
+            color: #334155 !important;
+            font-weight: 600 !important;
+        }
+        html:not(.dark) .text-slate-400 {
+            color: #475569 !important;
+        }
+        html:not(.dark) .text-slate-300 {
+            color: #1e293b !important;
+        }
+        html:not(.dark) .text-slate-500 {
+            color: #64748b !important;
         }
         html:not(.dark) input {
             color: #0f172a !important;
             background-color: #ffffff !important;
+            border-color: #cbd5e1 !important;
+        }
+        html:not(.dark) input::placeholder {
+            color: #94a3b8 !important;
+        }
+        html:not(.dark) .gold-gradient {
+            background: linear-gradient(135deg, #967043 0%, #b48c59 50%, #7a5a39 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
     </style>
 </head>

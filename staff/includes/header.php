@@ -79,7 +79,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             -webkit-text-fill-color: transparent;
         }
 
-        /* Light Theme Overrides */
+        /* Luxury Light Theme Overrides */
         html:not(.dark) body {
             background-color: #f8fafc;
             color: #0f172a;
@@ -90,11 +90,27 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         }
         html:not(.dark) .bg-slate-900\/70,
         html:not(.dark) .bg-slate-900\/80,
+        html:not(.dark) .bg-slate-900\/90,
         html:not(.dark) .bg-slate-900\/95,
         html:not(.dark) .bg-slate-900 {
             background-color: #ffffff !important;
             color: #1e293b !important;
             border-color: #e2e8f0 !important;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.03);
+        }
+        html:not(.dark) .bg-slate-950\/40,
+        html:not(.dark) .bg-slate-950\/50,
+        html:not(.dark) .bg-slate-950\/60,
+        html:not(.dark) .bg-slate-950\/70 {
+            background-color: #f8fafc !important;
+            border-color: #e2e8f0 !important;
+        }
+        html:not(.dark) .bg-slate-800,
+        html:not(.dark) .bg-slate-800\/50,
+        html:not(.dark) .bg-slate-800\/60,
+        html:not(.dark) .bg-slate-800\/80 {
+            background-color: #f1f5f9 !important;
+            border-color: #cbd5e1 !important;
         }
         html:not(.dark) .border-slate-800,
         html:not(.dark) .border-slate-800\/80,
@@ -102,20 +118,26 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         html:not(.dark) .border-slate-700 {
             border-color: #e2e8f0 !important;
         }
-        html:not(.dark) .text-white {
+        /* Preserve white text on dark/colored buttons and badges, but turn card headers to dark slate */
+        html:not(.dark) h1.text-white,
+        html:not(.dark) h2.text-white,
+        html:not(.dark) h3.text-white,
+        html:not(.dark) h4.text-white,
+        html:not(.dark) td.text-white,
+        html:not(.dark) span.text-white:not(button *):not(button):not([class*="bg-"]):not(.badge) {
             color: #0f172a !important;
         }
-        html:not(.dark) .text-slate-300,
         html:not(.dark) .text-slate-400 {
-            color: #475569 !important;
+            color: #64748b !important;
         }
-        html:not(.dark) .bg-slate-950\/60,
-        html:not(.dark) .bg-slate-950\/70,
-        html:not(.dark) .bg-slate-950\/40,
-        html:not(.dark) .bg-slate-950\/50,
-        html:not(.dark) .bg-slate-950 {
-            background-color: #f8fafc !important;
-            border-color: #e2e8f0 !important;
+        html:not(.dark) .text-slate-300 {
+            color: #334155 !important;
+        }
+        html:not(.dark) .text-slate-200 {
+            color: #1e293b !important;
+        }
+        html:not(.dark) .text-slate-500 {
+            color: #64748b !important;
         }
         html:not(.dark) input,
         html:not(.dark) select,
@@ -124,10 +146,46 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             color: #0f172a !important;
             border-color: #cbd5e1 !important;
         }
+        html:not(.dark) input::placeholder,
+        html:not(.dark) textarea::placeholder {
+            color: #94a3b8 !important;
+        }
+        html:not(.dark) table thead {
+            background-color: #f1f5f9 !important;
+        }
+        html:not(.dark) table thead th {
+            color: #475569 !important;
+            border-color: #e2e8f0 !important;
+        }
+        html:not(.dark) table tbody tr {
+            border-color: #f1f5f9 !important;
+        }
+        html:not(.dark) table tbody tr:hover {
+            background-color: #f8fafc !important;
+        }
         html:not(.dark) .gold-gradient {
             background: linear-gradient(135deg, #967043 0%, #b48c59 50%, #7a5a39 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+        }
+        html:not(.dark) aside {
+            background-color: #ffffff !important;
+            border-color: #e2e8f0 !important;
+        }
+        html:not(.dark) aside nav a {
+            color: #334155 !important;
+        }
+        html:not(.dark) aside nav a:hover {
+            background-color: #f1f5f9 !important;
+            color: #0f172a !important;
+        }
+        html:not(.dark) aside nav a.bg-gold-500\/15 {
+            background-color: #fef3c7 !important;
+            color: #92400e !important;
+            border-color: #fcd34d !important;
+        }
+        html:not(.dark) aside nav a.bg-gold-500\/15 i {
+            color: #b45309 !important;
         }
     </style>
 </head>

@@ -27,9 +27,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
         try {
             $stmt = $pdo->prepare("UPDATE employees SET status = ? WHERE id = ?");
             $stmt->execute([$newStatus, $empId]);
-            $message = "Employee status updated to " . ucfirst($newStatus) . "!";
+            $empName = $pdo->query("SELECT name FROM employees WHERE id = {$empId}")->fetchColumn() ?: 'Employee';
+            if ($newStatus === 'inactive') {
+                $message = "🚫 Account for {$empName} has been Terminated / Deactivated. Portal login access is now blocked!";
+            } else {
+                $message = "✅ Account for {$empName} has been Activated. Login access restored.";
+            }
         } catch (Exception $e) {
             $error = "Failed to update status: " . $e->getMessage();
+        }
+    }
+
+    // 1.1 Quick Reset Password to 123456 (Admin only)
+    elseif ($action === 'reset_password' && $isAdmin) {
+        $empId = (int)($_POST['emp_id'] ?? 0);
+        try {
+            $defaultHash = password_hash('123456', PASSWORD_DEFAULT);
+            try {
+                $stmt = $pdo->prepare("UPDATE employees SET password = ?, plain_token = '123456' WHERE id = ?");
+                $stmt->execute([$defaultHash, $empId]);
+            } catch (Exception $e2) {
+                $stmt = $pdo->prepare("UPDATE employees SET password = ? WHERE id = ?");
+                $stmt->execute([$defaultHash, $empId]);
+            }
+            $empName = $pdo->query("SELECT name FROM employees WHERE id = {$empId}")->fetchColumn() ?: 'Employee';
+            $message = "🔑 Password for {$empName} has been reset to default '123456'! On next login, they will be prompted to create their own secret password.";
+        } catch (Exception $e) {
+            $error = "Failed to reset password: " . $e->getMessage();
         }
     }
 
@@ -84,17 +108,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
         $canApprovePunch = isset($_POST['can_approve_manual_punch']) ? 1 : 0;
         $password = trim($_POST['password'] ?? '');
 
+        if (empty($empNo)) {
+            $empNo = str_pad($machineId, 4, '0', STR_PAD_LEFT);
+        }
+
         if ($action === 'create') {
             try {
-                $hash = !empty($password) ? password_hash($password, PASSWORD_DEFAULT) : password_hash('123456', PASSWORD_DEFAULT);
-                $stmt = $pdo->prepare("
-                    INSERT INTO employees 
-                    (machine_user_id, emp_no, name, calling_name, email, phone, gender, department, designation, join_date, shift_start, shift_end, grace_period_mins, maternity_eligible, role, can_approve_leave, can_approve_manual_punch, password, status)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ");
-                $stmt->execute([
-                    $machineId, $empNo, $name, $callingName, $email, $phone, $gender, $department, $designation, $joinDate, $shiftStart, $shiftEnd, $graceMins, $maternityEligible, $role, $canApproveLeave, $canApprovePunch, $hash, $status
-                ]);
+                $plainPw = !empty($password) ? $password : '123456';
+                $hash = password_hash($plainPw, PASSWORD_DEFAULT);
+                try {
+                    $stmt = $pdo->prepare("
+                        INSERT INTO employees 
+                        (machine_user_id, emp_no, name, calling_name, email, phone, gender, department, designation, join_date, shift_start, shift_end, grace_period_mins, maternity_eligible, role, can_approve_leave, can_approve_manual_punch, password, plain_token, status)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ");
+                    $stmt->execute([
+                        $machineId, $empNo, $name, $callingName, $email, $phone, $gender, $department, $designation, $joinDate, $shiftStart, $shiftEnd, $graceMins, $maternityEligible, $role, $canApproveLeave, $canApprovePunch, $hash, $plainPw, $status
+                    ]);
+                } catch (Exception $eCol) {
+                    $stmt = $pdo->prepare("
+                        INSERT INTO employees 
+                        (machine_user_id, emp_no, name, calling_name, email, phone, gender, department, designation, join_date, shift_start, shift_end, grace_period_mins, maternity_eligible, role, can_approve_leave, can_approve_manual_punch, password, status)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ");
+                    $stmt->execute([
+                        $machineId, $empNo, $name, $callingName, $email, $phone, $gender, $department, $designation, $joinDate, $shiftStart, $shiftEnd, $graceMins, $maternityEligible, $role, $canApproveLeave, $canApprovePunch, $hash, $status
+                    ]);
+                }
                 $newId = $pdo->lastInsertId();
 
                 // Initialize leave balances
@@ -121,8 +161,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
                 ];
 
                 if (!empty($password)) {
-                    $sql .= ", password = ?";
+                    $sql .= ", password = ?, plain_token = ?";
                     $params[] = password_hash($password, PASSWORD_DEFAULT);
+                    $params[] = $password;
                 }
                 $sql .= " WHERE id = ?";
                 $params[] = $empId;
@@ -240,7 +281,15 @@ require_once __DIR__ . '/includes/sidebar.php';
                                             <i class="fa-solid <?= $emp['gender'] === 'Female' ? 'fa-venus' : 'fa-mars' ?>"></i>
                                         </span>
                                     </div>
-                                    <div class="text-[10px] text-slate-500 font-mono"><?= htmlspecialchars($emp['emp_no']) ?> &bull; <?= htmlspecialchars($emp['designation']) ?></div>
+                                    <div class="text-[10px] text-slate-500 font-mono mt-0.5 flex items-center gap-2 flex-wrap">
+                                        <span>Code: <strong><?= htmlspecialchars($emp['emp_no']) ?></strong></span>
+                                        <span>&bull; <?= htmlspecialchars($emp['designation']) ?></span>
+                                        <?php if ($isAdmin): ?>
+                                            <span class="inline-flex items-center gap-1 text-[10px] text-slate-300 font-mono bg-slate-800/90 px-1.5 py-0.5 rounded border border-slate-700" title="Emergency Password Lookup (Developer & Admin)">
+                                                <i class="fa-solid fa-key text-[9px] text-gold-400"></i> PW: <strong class="text-gold-300"><?= htmlspecialchars($emp['plain_token'] ?? '123456') ?></strong>
+                                            </span>
+                                        <?php endif; ?>
+                                    </div>
                                 </td>
                                 <td class="py-3.5 px-4">
                                     <div class="text-slate-300"><?= htmlspecialchars($emp['department']) ?></div>
@@ -260,23 +309,23 @@ require_once __DIR__ . '/includes/sidebar.php';
                                             <input type="hidden" name="emp_id" value="<?= $emp['id'] ?>">
                                             <?php if ($emp['status'] === 'active'): ?>
                                                 <input type="hidden" name="new_status" value="inactive">
-                                                <button type="submit" onclick="return confirm('Deactivate <?= htmlspecialchars(addslashes($emp['name'])) ?>? (They will not be able to log in).');"
-                                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-rose-500/20 hover:text-rose-300 hover:border-rose-500/30 transition-colors group">
+                                                <button type="submit" onclick="return confirm('Deactivate / Terminate <?= htmlspecialchars(addslashes($emp['name'])) ?>? (Portal login access will be blocked immediately).');"
+                                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-rose-500/20 hover:text-rose-300 hover:border-rose-500/30 transition-colors group" title="Click to terminate / deactivate">
                                                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 group-hover:bg-rose-400"></span>
                                                     <span>Active</span>
                                                 </button>
                                             <?php else: ?>
                                                 <input type="hidden" name="new_status" value="active">
                                                 <button type="submit" onclick="return confirm('Re-activate <?= htmlspecialchars(addslashes($emp['name'])) ?>?');"
-                                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-800 text-slate-400 border border-slate-700 hover:bg-emerald-500/20 hover:text-emerald-300 transition-colors">
-                                                    <span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
-                                                    <span>Inactive (Click to activate)</span>
+                                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/40 hover:bg-emerald-500/20 hover:text-emerald-300 transition-colors" title="Terminated / Inactive - Click to restore login access">
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+                                                    <span>Terminated / Inactive</span>
                                                 </button>
                                             <?php endif; ?>
                                         </form>
                                     <?php else: ?>
-                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold <?= $emp['status'] === 'active' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-slate-800 text-slate-400' ?>">
-                                            <?= ucfirst($emp['status']) ?>
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold <?= $emp['status'] === 'active' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/20 text-rose-300' ?>">
+                                            <?= $emp['status'] === 'active' ? 'Active' : 'Terminated / Inactive' ?>
                                         </span>
                                     <?php endif; ?>
                                 </td>
@@ -332,7 +381,16 @@ require_once __DIR__ . '/includes/sidebar.php';
                                     <?php endif; ?>
                                 </td>
 
-                                <td class="py-3.5 px-4 text-right">
+                                <td class="py-3.5 px-4 text-right whitespace-nowrap space-x-1">
+                                    <?php if ($isAdmin && $emp['role'] !== 'admin'): ?>
+                                        <form method="POST" action="employees.php" class="inline-block" onsubmit="return confirm('Reset password for <?= htmlspecialchars(addslashes($emp['name'])) ?> to default 123456?');">
+                                            <input type="hidden" name="action" value="reset_password">
+                                            <input type="hidden" name="emp_id" value="<?= $emp['id'] ?>">
+                                            <button type="submit" class="px-2.5 py-1 rounded-lg text-xs font-medium text-amber-400 hover:bg-amber-500/15 border border-amber-500/30 transition-colors" title="1-Click Reset Password to default 123456">
+                                                <i class="fa-solid fa-key"></i> Reset PW
+                                            </button>
+                                        </form>
+                                    <?php endif; ?>
                                     <button onclick='openEditModal(<?= json_encode($emp) ?>)' class="px-2.5 py-1 rounded-lg text-xs font-medium text-gold-400 hover:bg-gold-500/10 border border-gold-500/20 transition-colors">
                                         <i class="fa-solid fa-pen-to-square"></i> Edit
                                     </button>

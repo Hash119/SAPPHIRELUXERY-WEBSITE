@@ -115,9 +115,20 @@ if (isset($pdo)) {
         $attStmt->execute([$empId, $startDate, $endDate]);
         $myAttendance = $attStmt->fetchAll();
 
+        $noPayDays = 0;
+        $approvedLeavesMonth = 0;
+        $missingPunchCount = 0;
+        $todayStr = date('Y-m-d');
+
         foreach ($myAttendance as $row) {
             if (in_array($row['status'], ['Present', 'Late', 'Half Day'])) {
                 $presentDays++;
+            }
+            if ($row['status'] === 'Absent') {
+                $noPayDays++;
+            }
+            if ($row['status'] === 'On Leave') {
+                $approvedLeavesMonth++;
             }
             if ($row['late_minutes'] > 0) {
                 $totalLateMins += $row['late_minutes'];
@@ -125,6 +136,14 @@ if (isset($pdo)) {
             }
             if ($row['overtime_minutes'] > 0) {
                 $totalOtMins += $row['overtime_minutes'];
+            }
+
+            // Detect missed / incomplete punches
+            $hasIn = !empty($row['check_in']) && $row['check_in'] !== '00:00:00';
+            $hasOut = !empty($row['check_out']) && $row['check_out'] !== '00:00:00';
+            $isPast = ($row['date'] < $todayStr);
+            if ((!$hasIn && $hasOut) || ($hasIn && !$hasOut && $isPast)) {
+                $missingPunchCount++;
             }
         }
 
@@ -182,15 +201,19 @@ require_once __DIR__ . '/includes/sidebar.php';
             </div>
 
             <!-- Quick Action Buttons -->
-            <div class="flex items-center gap-3">
-                <button onclick="openApplyModal()" class="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-950 bg-gradient-to-r from-gold-500 to-amber-400 hover:from-gold-400 hover:to-amber-300 shadow-lg shadow-gold-500/20 transition-all flex items-center gap-2">
+            <div class="flex items-center gap-2.5 flex-wrap">
+                <button onclick="openApplyModal()" class="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-950 bg-gradient-to-r from-gold-500 to-amber-400 hover:from-gold-400 hover:to-amber-300 shadow-lg shadow-gold-500/20 transition-all flex items-center gap-1.5">
                     <i class="fa-solid fa-calendar-plus"></i>
                     <span>Apply for Leave</span>
                 </button>
-                <button onclick="openPunchModal()" class="px-4 py-2.5 rounded-xl text-xs font-semibold text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-all flex items-center gap-2">
-                    <i class="fa-solid fa-clock-rotate-left"></i>
+                <button onclick="openPunchModal()" class="px-3.5 py-2 rounded-xl text-xs font-semibold text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-all flex items-center gap-1.5">
+                    <i class="fa-solid fa-clock-rotate-left text-amber-400"></i>
                     <span>Request Missed Punch</span>
                 </button>
+                <a href="change_password.php" class="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-200 bg-slate-800/90 hover:bg-slate-700 border border-slate-700 hover:border-gold-500/50 transition-all flex items-center gap-1.5">
+                    <i class="fa-solid fa-key text-gold-400"></i>
+                    <span>Change Password</span>
+                </a>
             </div>
         </div>
     </div>
@@ -209,89 +232,106 @@ require_once __DIR__ . '/includes/sidebar.php';
         </div>
     <?php endif; ?>
 
-    <!-- PERSONAL KPI CARDS (LATE, OT, ATTENDANCE, MATERNITY) -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+    <!-- RED WARNING BANNER FOR MISSED / INCOMPLETE PUNCHES -->
+    <?php if ($missingPunchCount > 0): ?>
+        <div class="bg-gradient-to-r from-rose-950/40 via-slate-900 to-slate-900 border border-rose-500/50 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl shadow-rose-500/10">
+            <div class="flex items-center gap-3.5">
+                <span class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center text-lg shrink-0 animate-pulse">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </span>
+                <div>
+                    <h4 class="text-sm font-bold text-rose-300">Warning: <?= $missingPunchCount ?> Missed / Incomplete Punch(es) Recorded!</h4>
+                    <p class="text-xs text-slate-400 mt-0.5">Some attendance days have an In-punch without Out-punch or vice versa. Submit a manual punch request for management authorization to fix them.</p>
+                </div>
+            </div>
+            <button onclick="openPunchModal()" class="px-4 py-2.5 rounded-xl text-xs font-semibold text-white bg-rose-600 hover:bg-rose-500 shrink-0 transition-colors flex items-center gap-2 shadow-lg shadow-rose-600/30">
+                <i class="fa-solid fa-wrench"></i> Fix Missed Punches
+            </button>
+        </div>
+    <?php endif; ?>
+
+    <!-- PERSONAL KPI CARDS (LATE, OT, ATTENDANCE, LEAVES, NO-PAY) -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         <!-- Monthly Late Time -->
-        <div class="bg-slate-900/70 border border-slate-800/80 rounded-2xl p-5 hover:border-amber-500/40 transition-all">
+        <div class="bg-slate-900/70 border border-slate-800/80 rounded-2xl p-4 sm:p-5 hover:border-amber-500/40 transition-all">
             <div class="flex items-center justify-between">
-                <span class="text-xs font-medium uppercase tracking-wider text-slate-400">This Month's Late</span>
-                <span class="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-sm">
+                <span class="text-xs font-medium uppercase tracking-wider text-slate-400">Late Time</span>
+                <span class="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-xs">
                     <i class="fa-solid fa-hourglass-half"></i>
                 </span>
             </div>
-            <div class="mt-3">
-                <span class="text-2xl sm:text-3xl font-bold font-mono text-amber-400">
+            <div class="mt-2.5">
+                <span class="text-xl sm:text-2xl font-bold font-mono text-amber-400">
                     <?= format_minutes($totalLateMins) ?>
                 </span>
-                <p class="text-[11px] text-slate-400 mt-1">Across <?= $lateDaysCount ?> late days</p>
+                <p class="text-[10px] text-slate-400 mt-0.5"><?= $lateDaysCount ?> late days</p>
             </div>
         </div>
 
         <!-- Monthly Overtime (OT) -->
-        <div class="bg-slate-900/70 border border-slate-800/80 rounded-2xl p-5 hover:border-emerald-500/40 transition-all">
+        <div class="bg-slate-900/70 border border-slate-800/80 rounded-2xl p-4 sm:p-5 hover:border-emerald-500/40 transition-all">
             <div class="flex items-center justify-between">
                 <span class="text-xs font-medium uppercase tracking-wider text-slate-400">Overtime (OT)</span>
-                <span class="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-sm">
+                <span class="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xs">
                     <i class="fa-solid fa-business-time"></i>
                 </span>
             </div>
-            <div class="mt-3">
-                <span class="text-2xl sm:text-3xl font-bold font-mono text-emerald-400">
+            <div class="mt-2.5">
+                <span class="text-xl sm:text-2xl font-bold font-mono text-emerald-400">
                     <?= number_format($totalOtMins / 60, 1) ?> hrs
                 </span>
-                <p class="text-[11px] text-slate-400 mt-1"><?= format_minutes($totalOtMins) ?> extra worked</p>
+                <p class="text-[10px] text-slate-400 mt-0.5"><?= format_minutes($totalOtMins) ?> worked</p>
             </div>
         </div>
 
         <!-- Days Attended -->
-        <div class="bg-slate-900/70 border border-slate-800/80 rounded-2xl p-5 hover:border-blue-500/40 transition-all">
+        <div class="bg-slate-900/70 border border-slate-800/80 rounded-2xl p-4 sm:p-5 hover:border-blue-500/40 transition-all">
             <div class="flex items-center justify-between">
-                <span class="text-xs font-medium uppercase tracking-wider text-slate-400">Days Attended</span>
-                <span class="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center text-sm">
+                <span class="text-xs font-medium uppercase tracking-wider text-slate-400">Days Present</span>
+                <span class="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center text-xs">
                     <i class="fa-solid fa-calendar-check"></i>
                 </span>
             </div>
-            <div class="mt-3">
-                <span class="text-2xl sm:text-3xl font-bold text-white"><?= $presentDays ?></span>
+            <div class="mt-2.5">
+                <span class="text-xl sm:text-2xl font-bold text-white"><?= $presentDays ?></span>
                 <span class="text-xs text-slate-400 ml-1">Days</span>
-                <p class="text-[11px] text-slate-400 mt-1">Month: <?= date('F Y', strtotime($selectedMonth . '-01')) ?></p>
+                <p class="text-[10px] text-slate-400 mt-0.5"><?= date('M Y', strtotime($selectedMonth . '-01')) ?></p>
             </div>
         </div>
 
-        <!-- SPECIAL MATERNITY / LEAVE BALANCE CARD -->
-        <?php if ($isMaternityEligible): ?>
-            <div class="bg-gradient-to-br from-purple-950/40 via-slate-900 to-slate-900 border border-purple-500/40 rounded-2xl p-5 shadow-lg shadow-purple-500/5">
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-medium uppercase tracking-wider text-purple-300">Maternity Allowance</span>
-                    <span class="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center text-sm">
-                        <i class="fa-solid fa-baby"></i>
-                    </span>
-                </div>
-                <div class="mt-3">
-                    <span class="text-2xl sm:text-3xl font-bold font-mono text-purple-300">
-                        <?= number_format($balance['maternity_total'] - $balance['maternity_used'], 0) ?>
-                    </span>
-                    <span class="text-xs text-purple-400 ml-1">Days Left</span>
-                    <p class="text-[11px] text-purple-400/80 mt-1">Quota: <?= $balance['maternity_total'] ?> days (12 weeks)</p>
-                </div>
+        <!-- Leaves Taken this Month -->
+        <div class="bg-slate-900/70 border border-slate-800/80 rounded-2xl p-4 sm:p-5 hover:border-purple-500/40 transition-all">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-medium uppercase tracking-wider text-slate-400">Approved Leaves</span>
+                <span class="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center text-xs">
+                    <i class="fa-solid fa-calendar-day"></i>
+                </span>
             </div>
-        <?php else: ?>
-            <div class="bg-slate-900/70 border border-slate-800/80 rounded-2xl p-5">
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-medium uppercase tracking-wider text-slate-400">Annual Leave Left</span>
-                    <span class="w-9 h-9 rounded-xl bg-slate-800 text-gold-400 flex items-center justify-center text-sm">
-                        <i class="fa-solid fa-plane-departure"></i>
-                    </span>
-                </div>
-                <div class="mt-3">
-                    <span class="text-2xl sm:text-3xl font-bold font-mono text-gold-400">
-                        <?= number_format($balance['annual_total'] - $balance['annual_used'], 1) ?>
-                    </span>
-                    <span class="text-xs text-slate-400 ml-1">Days</span>
-                    <p class="text-[11px] text-slate-400 mt-1">Casual left: <?= number_format($balance['casual_total'] - $balance['casual_used'], 1) ?></p>
-                </div>
+            <div class="mt-2.5">
+                <span class="text-xl sm:text-2xl font-bold text-purple-300"><?= $approvedLeavesMonth ?></span>
+                <span class="text-xs text-slate-400 ml-1">Days</span>
+                <p class="text-[10px] text-slate-400 mt-0.5">Taken this month</p>
             </div>
-        <?php endif; ?>
+        </div>
+
+        <!-- No Pay / Absences this Month -->
+        <div class="bg-slate-900/70 border <?= $noPayDays > 0 ? 'border-rose-500/50 bg-rose-950/20' : 'border-slate-800/80' ?> rounded-2xl p-4 sm:p-5 hover:border-rose-500/50 transition-all">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-medium uppercase tracking-wider text-slate-400">No-Pay Days</span>
+                <span class="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center text-xs">
+                    <i class="fa-solid fa-ban"></i>
+                </span>
+            </div>
+            <div class="mt-2.5">
+                <span class="text-xl sm:text-2xl font-bold font-mono <?= $noPayDays > 0 ? 'text-rose-400' : 'text-slate-300' ?>">
+                    <?= $noPayDays ?>
+                </span>
+                <span class="text-xs text-slate-400 ml-1">Days</span>
+                <p class="text-[10px] <?= $noPayDays > 0 ? 'text-rose-400 font-semibold' : 'text-slate-400' ?> mt-0.5">
+                    <?= $noPayDays > 0 ? 'Deducted as No Pay' : 'Zero No Pay' ?>
+                </p>
+            </div>
+        </div>
     </div>
 
     <!-- LEAVE BALANCES BREAKDOWN -->
@@ -372,12 +412,39 @@ require_once __DIR__ . '/includes/sidebar.php';
                     <?php if (empty($myAttendance)): ?>
                         <tr><td colspan="8" class="text-center py-8 text-slate-500 font-sans">No attendance records found for <?= date('F Y', strtotime($selectedMonth . '-01')) ?>.</td></tr>
                     <?php else: ?>
-                        <?php foreach ($myAttendance as $log): ?>
-                            <tr class="hover:bg-slate-800/30 transition-colors">
+                        <?php foreach ($myAttendance as $log): 
+                            $hasIn = !empty($log['check_in']) && $log['check_in'] !== '00:00:00';
+                            $hasOut = !empty($log['check_out']) && $log['check_out'] !== '00:00:00';
+                            $isPast = ($log['date'] < date('Y-m-d'));
+                            $isMissingIn = (!$hasIn && $hasOut);
+                            $isMissingOut = ($hasIn && !$hasOut && $isPast);
+                            $isIncomplete = ($isMissingIn || $isMissingOut);
+                        ?>
+                            <tr class="hover:bg-slate-800/30 transition-colors <?= $isIncomplete ? 'bg-rose-950/20' : '' ?>">
                                 <td class="py-3 px-4 text-white font-medium"><?= $log['date'] ?></td>
                                 <td class="py-3 px-4 text-slate-400 font-sans"><?= date('l', strtotime($log['date'])) ?></td>
-                                <td class="py-3 px-4 text-emerald-400 font-bold"><?= format_time_12h($log['check_in']) ?></td>
-                                <td class="py-3 px-4 text-slate-300"><?= format_time_12h($log['check_out']) ?></td>
+                                <td class="py-3 px-4">
+                                    <?php if ($hasIn): ?>
+                                        <span class="text-emerald-400 font-bold"><?= format_time_12h($log['check_in']) ?></span>
+                                    <?php elseif ($isMissingIn): ?>
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40 inline-flex items-center gap-1 animate-pulse">
+                                            <i class="fa-solid fa-triangle-exclamation"></i> Missing In
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="text-slate-600">-</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="py-3 px-4">
+                                    <?php if ($hasOut): ?>
+                                        <span class="text-slate-200"><?= format_time_12h($log['check_out']) ?></span>
+                                    <?php elseif ($isMissingOut): ?>
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40 inline-flex items-center gap-1 animate-pulse">
+                                            <i class="fa-solid fa-triangle-exclamation"></i> Missing Out
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="text-slate-600">-</span>
+                                    <?php endif; ?>
+                                </td>
                                 <td class="py-3 px-4"><?= $log['work_hours'] > 0 ? number_format($log['work_hours'], 1) . ' hrs' : '-' ?></td>
                                 <td class="py-3 px-4">
                                     <?php if ($log['late_minutes'] > 0): ?>
@@ -398,18 +465,27 @@ require_once __DIR__ . '/includes/sidebar.php';
                                     <?php endif; ?>
                                 </td>
                                 <td class="py-3 px-4 font-sans">
-                                    <?php
-                                    $stClass = match($log['status']) {
-                                        'Present' => 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-                                        'Late' => 'bg-amber-500/15 text-amber-400 border-amber-500/30',
-                                        'Half Day' => 'bg-blue-500/15 text-blue-400 border-blue-500/30',
-                                        'On Leave' => 'bg-purple-500/15 text-purple-400 border-purple-500/30',
-                                        default => 'bg-slate-800 text-slate-400 border-slate-700'
-                                    };
-                                    ?>
-                                    <span class="px-2 py-0.5 rounded text-[10px] font-medium border <?= $stClass ?>">
-                                        <?= htmlspecialchars($log['status']) ?>
-                                    </span>
+                                    <?php if ($isIncomplete): ?>
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 inline-flex items-center gap-1">
+                                            ⚠️ Missed Punch
+                                        </span>
+                                        <button type="button" onclick="openPunchModalWithDate('<?= $log['date'] ?>')" class="text-[10px] text-amber-400 hover:text-amber-300 underline block mt-0.5">
+                                            Fix &rarr;
+                                        </button>
+                                    <?php else: ?>
+                                        <?php
+                                        $stClass = match($log['status']) {
+                                            'Present' => 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+                                            'Late' => 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+                                            'Half Day' => 'bg-blue-500/15 text-blue-400 border-blue-500/30',
+                                            'On Leave' => 'bg-purple-500/15 text-purple-400 border-purple-500/30',
+                                            default => 'bg-slate-800 text-slate-400 border-slate-700'
+                                        };
+                                        ?>
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-medium border <?= $stClass ?>">
+                                            <?= htmlspecialchars($log['status']) ?>
+                                        </span>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -610,6 +686,11 @@ require_once __DIR__ . '/includes/sidebar.php';
     function closeApplyModal() { applyModal.classList.add('hidden'); }
     function openPunchModal() { punchModal.classList.remove('hidden'); }
     function closePunchModal() { punchModal.classList.add('hidden'); }
+    function openPunchModalWithDate(date) {
+        const dInput = document.querySelector('#punchModal input[name="date"]');
+        if (dInput) dInput.value = date;
+        openPunchModal();
+    }
 </script>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>
