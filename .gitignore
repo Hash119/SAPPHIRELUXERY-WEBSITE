@@ -1,0 +1,7 @@
+# Archives & Temporary files
+staff.zip
+*.tmp
+*.log
+
+# Environment / Secret credentials (if you want to keep db.php private)
+# staff/config/db.php
