@@ -24,13 +24,13 @@
 
         if (theme === 'light') {
             document.documentElement.classList.remove('dark');
-            if (themeIcon) themeIcon.className = 'fa-solid fa-sun w-4 text-center text-amber-400';
-            if (themeLabel) themeLabel.innerText = 'Light Theme';
-            if (headerThemeIcon) headerThemeIcon.className = 'fa-solid fa-sun text-sm text-amber-400';
+            if (themeIcon) themeIcon.className = 'fa-solid fa-sun w-4 text-center text-amber-500';
+            if (themeLabel) themeLabel.innerText = 'Light Mode';
+            if (headerThemeIcon) headerThemeIcon.className = 'fa-solid fa-sun text-sm text-amber-500';
         } else {
             document.documentElement.classList.add('dark');
             if (themeIcon) themeIcon.className = 'fa-solid fa-moon w-4 text-center text-slate-300';
-            if (themeLabel) themeLabel.innerText = 'Dark Theme';
+            if (themeLabel) themeLabel.innerText = 'Dark Mode';
             if (headerThemeIcon) headerThemeIcon.className = 'fa-solid fa-moon text-sm text-slate-300';
         }
     }

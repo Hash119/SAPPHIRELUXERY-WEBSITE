@@ -162,13 +162,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             box-shadow: 0 0 50px -10px rgba(197, 168, 128, 0.15);
         }
         html:not(.dark) body {
-            background-color: #f1f5f9;
+            background-color: #f8fafc;
             color: #0f172a;
         }
         html:not(.dark) .bg-slate-900\/80 {
             background-color: #ffffff !important;
             border-color: #cbd5e1 !important;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+            box-shadow: 0 20px 30px -10px rgba(15, 23, 42, 0.1), 0 10px 15px -5px rgba(15, 23, 42, 0.04) !important;
         }
         html:not(.dark) .bg-slate-950\/70,
         html:not(.dark) .bg-slate-950\/50,
@@ -177,8 +177,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border-color: #cbd5e1 !important;
         }
         html:not(.dark) label {
-            color: #334155 !important;
-            font-weight: 600 !important;
+            color: #1e293b !important;
+            font-weight: 700 !important;
         }
         html:not(.dark) .text-slate-400 {
             color: #475569 !important;
@@ -194,13 +194,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             background-color: #ffffff !important;
             border-color: #cbd5e1 !important;
         }
+        html:not(.dark) input:focus {
+            border-color: #b45309 !important;
+            box-shadow: 0 0 0 3px rgba(180, 83, 9, 0.2) !important;
+        }
         html:not(.dark) input::placeholder {
             color: #94a3b8 !important;
         }
         html:not(.dark) .gold-gradient {
-            background: linear-gradient(135deg, #967043 0%, #b48c59 50%, #7a5a39 100%);
+            background: linear-gradient(135deg, #92400e 0%, #b45309 50%, #78350f 100%) !important;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+        }
+        html:not(.dark) button[type="submit"] {
+            background: linear-gradient(135deg, #d97706 0%, #b45309 100%) !important;
+            color: #ffffff !important;
+            font-weight: 700 !important;
+            box-shadow: 0 4px 14px rgba(180, 83, 9, 0.35) !important;
+        }
+        html:not(.dark) button[type="submit"] * {
+            color: #ffffff !important;
         }
     </style>
 </head>

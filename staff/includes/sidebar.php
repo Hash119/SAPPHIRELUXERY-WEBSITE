@@ -57,69 +57,87 @@ if (isset($pdo) && $isManager) {
     <!-- Navigation -->
     <nav class="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
         <?php if ($isManager): ?>
-            <div class="px-3 pt-2 pb-1 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">Management</div>
+            <div class="px-3 pt-2 pb-1 text-[11px] font-bold tracking-wider text-slate-400 uppercase">Management Portal</div>
             
-            <a href="dashboard.php" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors <?= $currentPage === 'dashboard.php' ? 'bg-gold-500/15 text-gold-400 border border-gold-500/30' : 'text-slate-300 hover:bg-slate-800/70 hover:text-white' ?>">
-                <i class="fa-solid fa-chart-pie w-5 text-center text-slate-400"></i>
-                <span>Dashboard</span>
+            <a href="dashboard.php" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all <?= $currentPage === 'dashboard.php' ? 'active-nav bg-gold-500/15 text-gold-400 border border-gold-500/30' : 'nav-item text-slate-300 hover:bg-slate-800/60 hover:text-white' ?>">
+                <span class="w-8 h-8 rounded-lg flex items-center justify-center bg-blue-500/15 text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-all shrink-0 shadow-sm">
+                    <i class="fa-solid fa-chart-pie text-xs"></i>
+                </span>
+                <span class="font-medium">Dashboard</span>
             </a>
 
-            <a href="attendance.php" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors <?= $currentPage === 'attendance.php' ? 'bg-gold-500/15 text-gold-400 border border-gold-500/30' : 'text-slate-300 hover:bg-slate-800/70 hover:text-white' ?>">
-                <i class="fa-solid fa-calendar-check w-5 text-center text-slate-400"></i>
-                <span>Daily Attendance</span>
+            <a href="attendance.php" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all <?= $currentPage === 'attendance.php' ? 'active-nav bg-gold-500/15 text-gold-400 border border-gold-500/30' : 'nav-item text-slate-300 hover:bg-slate-800/60 hover:text-white' ?>">
+                <span class="w-8 h-8 rounded-lg flex items-center justify-center bg-emerald-500/15 text-emerald-400 group-hover:bg-emerald-500 group-hover:text-white transition-all shrink-0 shadow-sm">
+                    <i class="fa-solid fa-calendar-check text-xs"></i>
+                </span>
+                <span class="font-medium">Daily Attendance</span>
             </a>
 
-            <a href="upload_attendance.php" class="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors <?= $currentPage === 'upload_attendance.php' ? 'bg-gold-500/15 text-gold-400 border border-gold-500/30' : 'text-slate-300 hover:bg-slate-800/70 hover:text-white' ?>">
+            <a href="upload_attendance.php" class="group flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all <?= $currentPage === 'upload_attendance.php' ? 'active-nav bg-gold-500/15 text-gold-400 border border-gold-500/30' : 'nav-item text-slate-300 hover:bg-slate-800/60 hover:text-white' ?>">
                 <div class="flex items-center gap-3">
-                    <i class="fa-solid fa-file-excel w-5 text-center text-emerald-400"></i>
-                    <span>Upload Machine Excel</span>
+                    <span class="w-8 h-8 rounded-lg flex items-center justify-center bg-teal-500/15 text-teal-400 group-hover:bg-teal-500 group-hover:text-white transition-all shrink-0 shadow-sm">
+                        <i class="fa-solid fa-file-excel text-xs"></i>
+                    </span>
+                    <span class="font-medium">Upload Machine Excel</span>
                 </div>
-                <span class="px-1.5 py-0.5 text-[10px] font-bold bg-emerald-500/20 text-emerald-300 rounded border border-emerald-500/30">USB</span>
+                <span class="px-1.5 py-0.5 text-[10px] font-bold bg-teal-500/20 text-teal-300 rounded border border-teal-500/30 font-mono">USB</span>
             </a>
 
-            <a href="employees.php" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors <?= $currentPage === 'employees.php' ? 'bg-gold-500/15 text-gold-400 border border-gold-500/30' : 'text-slate-300 hover:bg-slate-800/70 hover:text-white' ?>">
-                <i class="fa-solid fa-users w-5 text-center text-slate-400"></i>
-                <span>Staff & Maternity Rules</span>
+            <a href="employees.php" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all <?= $currentPage === 'employees.php' ? 'active-nav bg-gold-500/15 text-gold-400 border border-gold-500/30' : 'nav-item text-slate-300 hover:bg-slate-800/60 hover:text-white' ?>">
+                <span class="w-8 h-8 rounded-lg flex items-center justify-center bg-pink-500/15 text-pink-400 group-hover:bg-pink-500 group-hover:text-white transition-all shrink-0 shadow-sm">
+                    <i class="fa-solid fa-users text-xs"></i>
+                </span>
+                <span class="font-medium">Staff & Maternity Rules</span>
             </a>
 
-            <a href="leaves.php" class="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors <?= $currentPage === 'leaves.php' ? 'bg-gold-500/15 text-gold-400 border border-gold-500/30' : 'text-slate-300 hover:bg-slate-800/70 hover:text-white' ?>">
+            <a href="leaves.php" class="group flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all <?= $currentPage === 'leaves.php' ? 'active-nav bg-gold-500/15 text-gold-400 border border-gold-500/30' : 'nav-item text-slate-300 hover:bg-slate-800/60 hover:text-white' ?>">
                 <div class="flex items-center gap-3">
-                    <i class="fa-solid fa-calendar-minus w-5 text-center text-slate-400"></i>
-                    <span>Leave Approvals</span>
+                    <span class="w-8 h-8 rounded-lg flex items-center justify-center bg-purple-500/15 text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-all shrink-0 shadow-sm">
+                        <i class="fa-solid fa-calendar-minus text-xs"></i>
+                    </span>
+                    <span class="font-medium">Leave Approvals</span>
                 </div>
                 <?php if ($pendingLeavesCount > 0): ?>
-                    <span class="px-2 py-0.5 text-xs font-semibold bg-rose-500 text-white rounded-full"><?= $pendingLeavesCount ?></span>
+                    <span class="px-2 py-0.5 text-xs font-bold bg-rose-500 text-white rounded-full shadow-sm animate-pulse"><?= $pendingLeavesCount ?></span>
                 <?php endif; ?>
             </a>
 
-            <a href="manual_punches.php" class="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors <?= $currentPage === 'manual_punches.php' ? 'bg-gold-500/15 text-gold-400 border border-gold-500/30' : 'text-slate-300 hover:bg-slate-800/70 hover:text-white' ?>">
+            <a href="manual_punches.php" class="group flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all <?= $currentPage === 'manual_punches.php' ? 'active-nav bg-gold-500/15 text-gold-400 border border-gold-500/30' : 'nav-item text-slate-300 hover:bg-slate-800/60 hover:text-white' ?>">
                 <div class="flex items-center gap-3">
-                    <i class="fa-solid fa-fingerprint w-5 text-center text-slate-400"></i>
-                    <span>Manual In/Out & History</span>
+                    <span class="w-8 h-8 rounded-lg flex items-center justify-center bg-amber-500/15 text-amber-400 group-hover:bg-amber-500 group-hover:text-slate-950 transition-all shrink-0 shadow-sm">
+                        <i class="fa-solid fa-fingerprint text-xs"></i>
+                    </span>
+                    <span class="font-medium">Manual In/Out & History</span>
                 </div>
                 <?php if ($pendingPunchesCount > 0): ?>
-                    <span class="px-2 py-0.5 text-xs font-semibold bg-amber-500 text-slate-950 rounded-full"><?= $pendingPunchesCount ?></span>
+                    <span class="px-2 py-0.5 text-xs font-bold bg-amber-500 text-slate-950 rounded-full shadow-sm"><?= $pendingPunchesCount ?></span>
                 <?php endif; ?>
             </a>
 
-            <a href="reports.php" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors <?= $currentPage === 'reports.php' ? 'bg-gold-500/15 text-gold-400 border border-gold-500/30' : 'text-slate-300 hover:bg-slate-800/70 hover:text-white' ?>">
-                <i class="fa-solid fa-file-invoice w-5 text-center text-slate-400"></i>
-                <span>Reports (Late & OT)</span>
+            <a href="reports.php" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all <?= $currentPage === 'reports.php' ? 'active-nav bg-gold-500/15 text-gold-400 border border-gold-500/30' : 'nav-item text-slate-300 hover:bg-slate-800/60 hover:text-white' ?>">
+                <span class="w-8 h-8 rounded-lg flex items-center justify-center bg-indigo-500/15 text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-all shrink-0 shadow-sm">
+                    <i class="fa-solid fa-file-invoice text-xs"></i>
+                </span>
+                <span class="font-medium">Reports (Timesheet & Staff)</span>
             </a>
 
             <?php if ($isAdmin): ?>
-            <a href="settings.php" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors <?= $currentPage === 'settings.php' ? 'bg-gold-500/15 text-gold-400 border border-gold-500/30' : 'text-slate-300 hover:bg-slate-800/70 hover:text-white' ?>">
-                <i class="fa-solid fa-sliders w-5 text-center text-slate-400"></i>
-                <span>Settings & Permissions</span>
+            <a href="settings.php" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all <?= $currentPage === 'settings.php' ? 'active-nav bg-gold-500/15 text-gold-400 border border-gold-500/30' : 'nav-item text-slate-300 hover:bg-slate-800/60 hover:text-white' ?>">
+                <span class="w-8 h-8 rounded-lg flex items-center justify-center bg-amber-600/15 text-amber-500 group-hover:bg-amber-600 group-hover:text-white transition-all shrink-0 shadow-sm">
+                    <i class="fa-solid fa-sliders text-xs"></i>
+                </span>
+                <span class="font-medium">Settings & Shifts</span>
             </a>
             <?php endif; ?>
 
-            <div class="px-3 pt-4 pb-1 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">Self Service</div>
+            <div class="px-3 pt-4 pb-1 text-[11px] font-bold tracking-wider text-slate-400 uppercase">Self Service Portal</div>
         <?php endif; ?>
 
-        <a href="employee_portal.php" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors <?= $currentPage === 'employee_portal.php' ? 'bg-gold-500/15 text-gold-400 border border-gold-500/30' : 'text-slate-300 hover:bg-slate-800/70 hover:text-white' ?>">
-            <i class="fa-solid fa-id-badge w-5 text-center text-gold-400"></i>
-            <span>My Portal & Leave Apply</span>
+        <a href="employee_portal.php" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all <?= $currentPage === 'employee_portal.php' ? 'active-nav bg-gold-500/15 text-gold-400 border border-gold-500/30' : 'nav-item text-slate-300 hover:bg-slate-800/60 hover:text-white' ?>">
+            <span class="w-8 h-8 rounded-lg flex items-center justify-center bg-gold-500/20 text-gold-400 group-hover:bg-gold-500 group-hover:text-slate-950 transition-all shrink-0 shadow-sm">
+                <i class="fa-solid fa-id-badge text-xs"></i>
+            </span>
+            <span class="font-medium">My Portal & Leaves</span>
         </a>
     </nav>
 
@@ -186,45 +204,60 @@ if (isset($pdo) && $isManager) {
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
-            <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+            <nav class="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
                 <?php if ($isManager): ?>
-                    <a href="dashboard.php" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:bg-slate-800">
-                        <i class="fa-solid fa-chart-pie w-5"></i> Dashboard
+                    <a href="dashboard.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:bg-slate-800">
+                        <span class="w-7 h-7 rounded-lg flex items-center justify-center bg-blue-500/15 text-blue-400 shrink-0"><i class="fa-solid fa-chart-pie text-xs"></i></span>
+                        <span>Dashboard</span>
                     </a>
-                    <a href="attendance.php" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:bg-slate-800">
-                        <i class="fa-solid fa-calendar-check w-5"></i> Daily Attendance
+                    <a href="attendance.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:bg-slate-800">
+                        <span class="w-7 h-7 rounded-lg flex items-center justify-center bg-emerald-500/15 text-emerald-400 shrink-0"><i class="fa-solid fa-calendar-check text-xs"></i></span>
+                        <span>Daily Attendance</span>
                     </a>
-                    <a href="upload_attendance.php" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:bg-slate-800">
-                        <i class="fa-solid fa-file-excel w-5 text-emerald-400"></i> Upload Machine Excel
+                    <a href="upload_attendance.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:bg-slate-800">
+                        <span class="w-7 h-7 rounded-lg flex items-center justify-center bg-teal-500/15 text-teal-400 shrink-0"><i class="fa-solid fa-file-excel text-xs"></i></span>
+                        <span>Upload Machine Excel</span>
                     </a>
-                    <a href="employees.php" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:bg-slate-800">
-                        <i class="fa-solid fa-users w-5"></i> Staff & Maternity
+                    <a href="employees.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:bg-slate-800">
+                        <span class="w-7 h-7 rounded-lg flex items-center justify-center bg-pink-500/15 text-pink-400 shrink-0"><i class="fa-solid fa-users text-xs"></i></span>
+                        <span>Staff & Maternity</span>
                     </a>
-                    <a href="leaves.php" class="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:bg-slate-800">
-                        <span class="flex items-center gap-3"><i class="fa-solid fa-calendar-minus w-5"></i> Leaves</span>
-                        <?php if ($pendingLeavesCount > 0): ?><span class="bg-rose-500 text-white text-xs px-2 py-0.5 rounded-full"><?= $pendingLeavesCount ?></span><?php endif; ?>
+                    <a href="leaves.php" class="flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:bg-slate-800">
+                        <span class="flex items-center gap-3">
+                            <span class="w-7 h-7 rounded-lg flex items-center justify-center bg-purple-500/15 text-purple-400 shrink-0"><i class="fa-solid fa-calendar-minus text-xs"></i></span>
+                            <span>Leaves</span>
+                        </span>
+                        <?php if ($pendingLeavesCount > 0): ?><span class="bg-rose-500 text-white text-xs px-2 py-0.5 rounded-full font-bold"><?= $pendingLeavesCount ?></span><?php endif; ?>
                     </a>
-                    <a href="manual_punches.php" class="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:bg-slate-800">
-                        <span class="flex items-center gap-3"><i class="fa-solid fa-fingerprint w-5"></i> Manual Punches</span>
-                        <?php if ($pendingPunchesCount > 0): ?><span class="bg-amber-500 text-slate-950 text-xs px-2 py-0.5 rounded-full"><?= $pendingPunchesCount ?></span><?php endif; ?>
+                    <a href="manual_punches.php" class="flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:bg-slate-800">
+                        <span class="flex items-center gap-3">
+                            <span class="w-7 h-7 rounded-lg flex items-center justify-center bg-amber-500/15 text-amber-400 shrink-0"><i class="fa-solid fa-fingerprint text-xs"></i></span>
+                            <span>Manual Punches</span>
+                        </span>
+                        <?php if ($pendingPunchesCount > 0): ?><span class="bg-amber-500 text-slate-950 text-xs px-2 py-0.5 rounded-full font-bold"><?= $pendingPunchesCount ?></span><?php endif; ?>
                     </a>
-                    <a href="reports.php" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:bg-slate-800">
-                        <i class="fa-solid fa-file-invoice w-5"></i> Reports
+                    <a href="reports.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:bg-slate-800">
+                        <span class="w-7 h-7 rounded-lg flex items-center justify-center bg-indigo-500/15 text-indigo-400 shrink-0"><i class="fa-solid fa-file-invoice text-xs"></i></span>
+                        <span>Reports</span>
                     </a>
                     <?php if ($isAdmin): ?>
-                    <a href="settings.php" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:bg-slate-800">
-                        <i class="fa-solid fa-sliders w-5"></i> Settings
+                    <a href="settings.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:bg-slate-800">
+                        <span class="w-7 h-7 rounded-lg flex items-center justify-center bg-amber-600/15 text-amber-500 shrink-0"><i class="fa-solid fa-sliders text-xs"></i></span>
+                        <span>Settings</span>
                     </a>
                     <?php endif; ?>
                 <?php endif; ?>
-                <a href="employee_portal.php" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gold-400 bg-gold-500/10">
-                    <i class="fa-solid fa-id-badge w-5"></i> My Staff Portal
+                <a href="employee_portal.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gold-400 bg-gold-500/10">
+                    <span class="w-7 h-7 rounded-lg flex items-center justify-center bg-gold-500/20 text-gold-400 shrink-0"><i class="fa-solid fa-id-badge text-xs"></i></span>
+                    <span>My Staff Portal</span>
                 </a>
-                <button onclick="toggleTheme()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:bg-slate-800 mt-2">
-                    <i class="fa-solid fa-circle-half-stroke w-5"></i> Switch Dark / Light Theme
+                <button onclick="toggleTheme()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:bg-slate-800 mt-2">
+                    <span class="w-7 h-7 rounded-lg flex items-center justify-center bg-slate-800 text-slate-300 shrink-0"><i class="fa-solid fa-circle-half-stroke text-xs"></i></span>
+                    <span>Switch Dark / Light Theme</span>
                 </button>
-                <a href="logout.php" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-rose-400 hover:bg-rose-500/10 mt-3">
-                    <i class="fa-solid fa-right-from-bracket w-5"></i> Sign Out
+                <a href="logout.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-rose-400 hover:bg-rose-500/10 mt-3">
+                    <span class="w-7 h-7 rounded-lg flex items-center justify-center bg-rose-500/15 text-rose-400 shrink-0"><i class="fa-solid fa-right-from-bracket text-xs"></i></span>
+                    <span>Sign Out</span>
                 </a>
             </nav>
         </div>
