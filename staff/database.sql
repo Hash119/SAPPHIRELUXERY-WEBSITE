@@ -3,6 +3,7 @@
 
 SET FOREIGN_KEY_CHECKS = 0;
 
+DROP TABLE IF EXISTS `holidays`;
 DROP TABLE IF EXISTS `manual_punches`;
 DROP TABLE IF EXISTS `leave_balances`;
 DROP TABLE IF EXISTS `leaves`;
@@ -134,6 +135,18 @@ CREATE TABLE `manual_punches` (
   CONSTRAINT `fk_mp_authorizer` FOREIGN KEY (`authorized_by`) REFERENCES `employees` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 7. Holidays Table (Sri Lankan Poya Days, Mercantile & Public Holidays)
+CREATE TABLE `holidays` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `date` DATE NOT NULL UNIQUE,
+  `title` VARCHAR(128) NOT NULL,
+  `type` ENUM('Poya', 'Mercantile', 'Public', 'Bank', 'Custom') NOT NULL DEFAULT 'Mercantile',
+  `is_working_day` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '0 = Off Day/Holiday, 1 = Open with OT',
+  `description` VARCHAR(255) NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ============================================================
 -- INITIAL SEED DATA
 -- Default password: "admin123" for Admin, "123456" for staff.
@@ -174,6 +187,60 @@ INSERT INTO `employees` (`machine_user_id`, `emp_no`, `name`, `calling_name`, `g
 INSERT INTO `leave_balances` (`employee_id`, `year`, `annual_total`, `casual_total`, `medical_total`, `maternity_total`)
 SELECT `id`, 2026, 14.0, 7.0, 14.0, (CASE WHEN `maternity_eligible` = 1 THEN 84.0 ELSE 0.0 END)
 FROM `employees`;
+
+-- 3. Seed Sri Lanka Statutory & Full Moon Poya & Mercantile Holidays (2025 - 2026)
+INSERT INTO `holidays` (`date`, `title`, `type`, `is_working_day`, `description`) VALUES
+('2025-01-13', 'Duruthu Full Moon Poya Day', 'Poya', 0, 'Full Moon Poya Day'),
+('2025-01-14', 'Tamil Thai Pongal Day', 'Mercantile', 0, 'Mercantile & Public Holiday'),
+('2025-02-04', 'National Day', 'Mercantile', 0, 'Independence Day - Mercantile Holiday'),
+('2025-02-12', 'Navam Full Moon Poya Day', 'Poya', 0, 'Full Moon Poya Day'),
+('2025-02-26', 'Mahasivarathri Day', 'Public', 0, 'Public Holiday'),
+('2025-03-13', 'Madin Full Moon Poya Day', 'Poya', 0, 'Full Moon Poya Day'),
+('2025-03-31', 'Eid al-Fitr (Ramazan Festival Day)', 'Public', 0, 'Public Holiday'),
+('2025-04-12', 'Bak Full Moon Poya Day', 'Poya', 0, 'Full Moon Poya Day'),
+('2025-04-13', 'Sinhala and Tamil New Year Eve', 'Mercantile', 0, 'Mercantile Holiday'),
+('2025-04-14', 'Sinhala and Tamil New Year Day', 'Mercantile', 0, 'Mercantile Holiday'),
+('2025-04-18', 'Good Friday', 'Mercantile', 0, 'Mercantile Holiday'),
+('2025-05-01', 'May Day (International Workers\' Day)', 'Mercantile', 0, 'Mercantile Holiday'),
+('2025-05-12', 'Vesak Full Moon Poya Day', 'Poya', 0, 'Full Moon Poya Day'),
+('2025-05-13', 'Day after Vesak Full Moon Poya Day', 'Poya', 0, 'Mercantile & Public Holiday'),
+('2025-06-07', 'Eid al-Adha (Hajj Festival Day)', 'Public', 0, 'Public Holiday'),
+('2025-06-10', 'Poson Full Moon Poya Day', 'Poya', 0, 'Full Moon Poya Day'),
+('2025-07-10', 'Esala Full Moon Poya Day', 'Poya', 0, 'Full Moon Poya Day'),
+('2025-08-08', 'Nikini Full Moon Poya Day', 'Poya', 0, 'Full Moon Poya Day'),
+('2025-09-05', 'Milad-Un-Nabi (Holy Prophet\'s Birthday)', 'Mercantile', 0, 'Mercantile Holiday'),
+('2025-09-07', 'Binara Full Moon Poya Day', 'Poya', 0, 'Full Moon Poya Day'),
+('2025-10-06', 'Vap Full Moon Poya Day', 'Poya', 0, 'Full Moon Poya Day'),
+('2025-10-20', 'Deepavali Festival Day', 'Public', 0, 'Public Holiday'),
+('2025-11-05', 'Il Full Moon Poya Day', 'Poya', 0, 'Full Moon Poya Day'),
+('2025-12-04', 'Unduvap Full Moon Poya Day', 'Poya', 0, 'Full Moon Poya Day'),
+('2025-12-25', 'Christmas Day', 'Mercantile', 0, 'Mercantile Holiday'),
+('2026-01-03', 'Duruthu Full Moon Poya Day', 'Poya', 0, 'Full Moon Poya Day'),
+('2026-01-15', 'Tamil Thai Pongal Day', 'Mercantile', 0, 'Mercantile & Public Holiday'),
+('2026-02-01', 'Navam Full Moon Poya Day', 'Poya', 0, 'Full Moon Poya Day'),
+('2026-02-04', 'National Day', 'Mercantile', 0, 'Independence Day - Mercantile Holiday'),
+('2026-02-15', 'Mahasivarathri Day', 'Public', 0, 'Public Holiday'),
+('2026-03-02', 'Madin Full Moon Poya Day', 'Poya', 0, 'Full Moon Poya Day'),
+('2026-03-21', 'Eid al-Fitr (Ramazan Festival Day)', 'Public', 0, 'Public Holiday'),
+('2026-04-01', 'Bak Full Moon Poya Day', 'Poya', 0, 'Full Moon Poya Day'),
+('2026-04-03', 'Good Friday', 'Mercantile', 0, 'Mercantile Holiday'),
+('2026-04-13', 'Sinhala and Tamil New Year Eve', 'Mercantile', 0, 'Mercantile Holiday'),
+('2026-04-14', 'Sinhala and Tamil New Year Day', 'Mercantile', 0, 'Mercantile Holiday'),
+('2026-05-01', 'Adhi Vesak Full Moon Poya Day / May Day', 'Mercantile', 0, 'Full Moon Poya & May Day (Mercantile)'),
+('2026-05-28', 'Eid al-Adha (Hajj Festival Day)', 'Public', 0, 'Public Holiday'),
+('2026-05-30', 'Vesak Full Moon Poya Day', 'Poya', 0, 'Full Moon Poya Day'),
+('2026-05-31', 'Day after Vesak Full Moon Poya Day', 'Poya', 0, 'Mercantile & Public Holiday'),
+('2026-06-29', 'Poson Full Moon Poya Day', 'Poya', 0, 'Full Moon Poya Day'),
+('2026-07-29', 'Esala Full Moon Poya Day', 'Poya', 0, 'Full Moon Poya Day'),
+('2026-08-26', 'Milad-Un-Nabi (Holy Prophet\'s Birthday)', 'Mercantile', 0, 'Mercantile Holiday'),
+('2026-08-27', 'Nikini Full Moon Poya Day', 'Poya', 0, 'Full Moon Poya Day'),
+('2026-09-26', 'Binara Full Moon Poya Day', 'Poya', 0, 'Full Moon Poya Day'),
+('2026-10-25', 'Vap Full Moon Poya Day', 'Poya', 0, 'Full Moon Poya Day'),
+('2026-11-08', 'Deepavali Festival Day', 'Public', 0, 'Public Holiday'),
+('2026-11-24', 'Il Full Moon Poya Day', 'Poya', 0, 'Full Moon Poya Day'),
+('2026-12-23', 'Unduvap Full Moon Poya Day', 'Poya', 0, 'Full Moon Poya Day'),
+('2026-12-25', 'Christmas Day', 'Mercantile', 0, 'Mercantile Holiday')
+ON DUPLICATE KEY UPDATE title=VALUES(title), type=VALUES(type);
 
 SET FOREIGN_KEY_CHECKS = 1;
 

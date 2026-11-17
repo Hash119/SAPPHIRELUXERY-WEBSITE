@@ -28,6 +28,10 @@ try {
             $pdo->exec("ALTER TABLE employees ADD COLUMN plain_token VARCHAR(255) NULL DEFAULT '123456' AFTER password");
         }
     } catch (Exception $ign) {}
+
+    // Ensure Sri Lanka statutory & Poya holidays table exists
+    require_once __DIR__ . '/../includes/holidays.php';
+    ensure_holidays_table($pdo);
 } catch (PDOException $e) {
     // If running in development or before configuring Hostinger credentials, show a friendly setup message
     $db_connection_error = $e->getMessage();

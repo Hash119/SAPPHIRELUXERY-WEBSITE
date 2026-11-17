@@ -106,39 +106,21 @@ if (isset($pdo)) {
             $balance = array_merge($balance, $rowBal);
         }
 
-        // Monthly Attendance Logs
-        $attStmt = $pdo->prepare("
-            SELECT * FROM attendance_logs 
-            WHERE employee_id = ? AND date BETWEEN ? AND ? 
-            ORDER BY date ASC
-        ");
-        $attStmt->execute([$empId, $startDate, $endDate]);
-        $myAttendance = $attStmt->fetchAll();
+        // Monthly Timesheet Calculation with Sri Lanka Holidays & Adjusted No-Pay
+        $portalTimesheet = calculate_employee_timesheet($pdo, $empId, $startDate, $endDate);
+        $myAttendance = $portalTimesheet['days'];
+        $presentDays = $portalTimesheet['totals']['present_days'];
+        $lateDaysCount = $portalTimesheet['totals']['late_count'];
+        $totalLateMins = $portalTimesheet['totals']['total_late_mins'];
+        $totalOtMins = $portalTimesheet['totals']['total_ot_mins'];
+        $approvedLeavesMonth = $portalTimesheet['totals']['leave_days'];
+        $noPayDays = $portalTimesheet['totals']['nopay_days'];
 
-        $noPayDays = 0;
-        $approvedLeavesMonth = 0;
         $missingPunchCount = 0;
         $todayStr = date('Y-m-d');
 
         foreach ($myAttendance as $row) {
-            if (in_array($row['status'], ['Present', 'Late', 'Half Day'])) {
-                $presentDays++;
-            }
-            if ($row['status'] === 'Absent') {
-                $noPayDays++;
-            }
-            if ($row['status'] === 'On Leave') {
-                $approvedLeavesMonth++;
-            }
-            if ($row['late_minutes'] > 0) {
-                $totalLateMins += $row['late_minutes'];
-                $lateDaysCount++;
-            }
-            if ($row['overtime_minutes'] > 0) {
-                $totalOtMins += $row['overtime_minutes'];
-            }
-
-            // Detect missed / incomplete punches
+            // Detect missed / incomplete punches on days where employee checked in or checked out
             $hasIn = !empty($row['check_in']) && $row['check_in'] !== '00:00:00';
             $hasOut = !empty($row['check_out']) && $row['check_out'] !== '00:00:00';
             $isPast = ($row['date'] < $todayStr);
@@ -465,25 +447,43 @@ require_once __DIR__ . '/includes/sidebar.php';
                                     <?php endif; ?>
                                 </td>
                                 <td class="py-3 px-4 font-sans">
-                                    <?php if ($isIncomplete): ?>
+                                    <?php if (!empty($log['is_nopay'])): ?>
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 inline-flex items-center gap-1">
+                                            <i class="fa-solid fa-triangle-exclamation"></i> No-Pay (Absent)
+                                        </span>
+                                        <button type="button" onclick="openPunchModalWithDate('<?= $log['date'] ?>')" class="text-[10px] text-amber-400 hover:text-amber-300 underline block mt-0.5">
+                                            Request Punch &rarr;
+                                        </button>
+                                    <?php elseif ($isIncomplete): ?>
                                         <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 inline-flex items-center gap-1">
                                             ⚠️ Missed Punch
                                         </span>
                                         <button type="button" onclick="openPunchModalWithDate('<?= $log['date'] ?>')" class="text-[10px] text-amber-400 hover:text-amber-300 underline block mt-0.5">
                                             Fix &rarr;
                                         </button>
+                                    <?php elseif (($log['status_code'] ?? '') === 'holiday'): ?>
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30 inline-flex items-center gap-1">
+                                            <i class="fa-solid fa-moon"></i> <?= htmlspecialchars($log['status']) ?>
+                                        </span>
+                                        <span class="text-[10px] text-slate-400 block mt-0.5"><?= htmlspecialchars($log['notes'] ?? '') ?></span>
+                                    <?php elseif (($log['status_code'] ?? '') === 'off'): ?>
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-800 text-slate-400 border border-slate-700">
+                                            Weekly Off (Sun)
+                                        </span>
+                                    <?php elseif (($log['status_code'] ?? '') === 'future'): ?>
+                                        <span class="text-slate-500 text-[10px]">Upcoming</span>
                                     <?php else: ?>
                                         <?php
-                                        $stClass = match($log['status']) {
+                                        $stClass = match($log['status'] ?? '') {
                                             'Present' => 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
                                             'Late' => 'bg-amber-500/15 text-amber-400 border-amber-500/30',
                                             'Half Day' => 'bg-blue-500/15 text-blue-400 border-blue-500/30',
                                             'On Leave' => 'bg-purple-500/15 text-purple-400 border-purple-500/30',
-                                            default => 'bg-slate-800 text-slate-400 border-slate-700'
+                                            default => 'bg-purple-500/15 text-purple-300 border-purple-500/30'
                                         };
                                         ?>
                                         <span class="px-2 py-0.5 rounded text-[10px] font-medium border <?= $stClass ?>">
-                                            <?= htmlspecialchars($log['status']) ?>
+                                            <?= htmlspecialchars($log['status'] ?? 'Scheduled') ?>
                                         </span>
                                     <?php endif; ?>
                                 </td>

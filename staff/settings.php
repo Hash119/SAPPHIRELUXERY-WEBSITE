@@ -3,6 +3,7 @@
  * Sapphire Aesthetic & Luxury - System Settings & Permission Rules
  */
 require_once __DIR__ . '/config/auth.php';
+require_once __DIR__ . '/includes/holidays.php';
 require_admin();
 
 $pageTitle = 'System Settings & Leave Permissions';
@@ -10,8 +11,17 @@ $message = '';
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
-    try {
-        $settingsToUpdate = [
+    // 1. Handle Google Calendar Sync Action
+    if (isset($_POST['sync_action']) && $_POST['sync_action'] === 'sync_gcal_holidays') {
+        $syncRes = sync_google_calendar_holidays($pdo);
+        if ($syncRes['success']) {
+            $message = $syncRes['message'];
+        } else {
+            $error = $syncRes['message'];
+        }
+    } else {
+        try {
+            $settingsToUpdate = [
             'company_name'            => trim($_POST['company_name'] ?? 'Sapphire Aesthetic & Luxury'),
             'default_shift_start'     => $_POST['default_shift_start'] ?? '09:00:00',
             'default_shift_end'       => $_POST['default_shift_end'] ?? '18:00:00',
@@ -30,13 +40,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
     } catch (Exception $e) {
         $error = "Error saving settings: " . $e->getMessage();
     }
+    }
 }
 
-// Fetch current settings
+// Fetch current settings & holidays
 $currentSettings = [];
+$holidayCount = 0;
+$upcomingHolidays = [];
 if (isset($pdo)) {
     try {
         $currentSettings = $pdo->query("SELECT setting_key, setting_value FROM settings")->fetchAll(PDO::FETCH_KEY_PAIR);
+        $holidayCount = (int)$pdo->query("SELECT COUNT(*) FROM holidays")->fetchColumn();
+        $upcomingHolidays = $pdo->query("SELECT * FROM holidays WHERE date >= CURRENT_DATE ORDER BY date ASC LIMIT 5")->fetchAll();
     } catch (Exception $e) {}
 }
 
@@ -175,6 +190,58 @@ require_once __DIR__ . '/includes/sidebar.php';
                     <p><strong class="text-white">Endpoint URL:</strong> <code class="text-gold-400 font-mono">https://staff.sapphireaesthetic.com/api/sync_attendance.php</code></p>
                     <p>The office PC script in <code>sync_tool/machine_sync.py</code> will use this secret key to upload real-time punch records.</p>
                 </div>
+            </div>
+        </div>
+
+        <!-- 4. SRI LANKA HOLIDAYS & GOOGLE CALENDAR SYNC -->
+        <div class="bg-slate-900/70 border border-slate-800/80 rounded-2xl p-6 sm:p-8 space-y-4">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-800 flex-wrap gap-3">
+                <div class="flex items-center gap-3">
+                    <span class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-moon"></i>
+                    </span>
+                    <div>
+                        <h3 class="font-serif font-bold text-base text-white">Sri Lanka Holidays & Google Calendar Integration</h3>
+                        <p class="text-xs text-slate-400">Automatic detection of Full Moon Poya Days & Mercantile Holidays for payroll & No-Pay calculations</p>
+                    </div>
+                </div>
+
+                <button type="submit" name="sync_action" value="sync_gcal_holidays"
+                    class="px-4 py-2 rounded-xl text-xs font-semibold text-amber-300 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 transition-all flex items-center gap-1.5 shadow-md">
+                    <i class="fa-solid fa-rotate"></i>
+                    <span>Sync Google Calendar Now</span>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                <div class="p-4 rounded-xl bg-slate-950 border border-slate-800">
+                    <span class="text-[10px] text-slate-400 block uppercase font-semibold">Active Holidays in DB</span>
+                    <span class="text-2xl font-bold font-mono text-amber-400 mt-1 block"><?= $holidayCount ?></span>
+                    <p class="text-[10px] text-slate-500 mt-0.5">Poya, Mercantile & Public Holidays (2025-2027)</p>
+                </div>
+                <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 col-span-2">
+                    <span class="text-[10px] text-slate-400 block uppercase font-semibold mb-1.5">Upcoming Holidays (Next 5)</span>
+                    <?php if (empty($upcomingHolidays)): ?>
+                        <p class="text-xs text-slate-500">No upcoming holidays found.</p>
+                    <?php else: ?>
+                        <div class="space-y-1 text-xs">
+                            <?php foreach ($upcomingHolidays as $uh): ?>
+                                <div class="flex items-center justify-between py-1 border-b border-slate-800/60 last:border-0">
+                                    <span class="text-white font-medium flex items-center gap-1.5">
+                                        <i class="fa-solid <?= $uh['type'] === 'Poya' ? 'fa-moon text-amber-400' : 'fa-calendar-star text-cyan-400' ?> text-[10px]"></i>
+                                        <?= htmlspecialchars($uh['title']) ?>
+                                    </span>
+                                    <span class="text-slate-400 font-mono text-[11px]"><?= $uh['date'] ?> (<?= $uh['type'] ?>)</span>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <div class="p-4 rounded-xl bg-slate-950/60 border border-slate-800 text-[11px] text-slate-400">
+                <i class="fa-solid fa-circle-info text-amber-400 mr-1.5"></i>
+                Synchronizes directly from Google Calendar's official Sri Lankan Holiday feed (<code class="text-slate-300 font-mono">en.lk#holiday@group.v.calendar.google.com</code>). Holidays ensure staff are not penalized with unexcused "No-Pay" deductions on official state and mercantile holidays.
             </div>
         </div>
 
