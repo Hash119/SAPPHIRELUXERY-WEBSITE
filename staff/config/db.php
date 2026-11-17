@@ -7,8 +7,8 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'u123456789_sapphire_hrm'); // Enter your Hostinger Database Name here
-define('DB_USER', 'u123456789_hrm_user');     // Enter your Hostinger MySQL Username here
+define('DB_NAME', 'u968226160_sapphire_hrm'); // Enter your Hostinger Database Name here
+define('DB_USER', 'u968226160_shrm_admin');     // Enter your Hostinger MySQL Username here
 define('DB_PASS', 'D3m4fSn5@S@');//entern your Hostinger MySQL Password here
 define('DB_CHARSET', 'utf8mb4');
 
