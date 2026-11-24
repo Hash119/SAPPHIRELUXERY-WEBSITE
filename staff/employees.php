@@ -64,17 +64,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
             $stmt = $pdo->prepare("UPDATE employees SET employment_type = 'confirmed' WHERE id = ?");
             $stmt->execute([$empId]);
             
-            // Allocate 14 Annual and 7 Casual leaves for current calendar year
-            $curYear = (int)date('Y');
-            $balStmt = $pdo->prepare("
-                UPDATE leave_balances 
-                SET annual_total = 14.0, casual_total = 7.0 
-                WHERE employee_id = ? AND year = ?
-            ");
-            $balStmt->execute([$empId, $curYear]);
+            // Sync leave balances for current year (unlocks 14 Annual + 7 Casual while preserving already-used accrued leaves)
+            if (function_exists('sync_employee_leave_balances')) {
+                sync_employee_leave_balances($pdo, $empId, (int)date('Y'), (int)date('m'));
+            } else {
+                $curYear = (int)date('Y');
+                $balStmt = $pdo->prepare("
+                    UPDATE leave_balances 
+                    SET annual_total = 14.0, casual_total = 7.0 
+                    WHERE employee_id = ? AND year = ?
+                ");
+                $balStmt->execute([$empId, $curYear]);
+            }
             
             $empName = $pdo->query("SELECT name FROM employees WHERE id = {$empId}")->fetchColumn() ?: 'Employee';
-            $message = "🎉 {$empName} has been officially Confirmed! 14 Annual & 7 Casual leaves have been unlocked.";
+            $message = "🎉 {$empName} has been officially Confirmed! Full 14 Annual & 7 Casual leaves unlocked (balanced against any leaves already taken).";
         } catch (Exception $e) {
             $error = "Failed to confirm employee: " . $e->getMessage();
         }
@@ -165,17 +169,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
                 }
                 $newId = $pdo->lastInsertId();
 
-                // Initialize leave balances (Confirmed: 14 Annual + 7 Casual | Probation: 0 Annual + 0 Casual | Both: 4 Monthly Quota)
-                $annualDays = ($employmentType === 'probation') ? 0.0 : 14.0;
-                $casualDays = ($employmentType === 'probation') ? 0.0 : 7.0;
-                $matDays = $maternityEligible ? 84.0 : 0.0;
-                $balStmt = $pdo->prepare("
-                    INSERT INTO leave_balances 
-                    (employee_id, year, annual_total, casual_total, monthly_quota, medical_total, maternity_total) 
-                    VALUES (?, ?, ?, ?, 4.0, 14.0, ?)
-                    ON DUPLICATE KEY UPDATE annual_total = VALUES(annual_total), casual_total = VALUES(casual_total), monthly_quota = 4.0
-                ");
-                $balStmt->execute([$newId, (int)date('Y'), $annualDays, $casualDays, $matDays]);
+                // Sync dynamic leave balances based on join_date & employment_type
+                if (function_exists('sync_employee_leave_balances')) {
+                    sync_employee_leave_balances($pdo, $newId, (int)date('Y'), (int)date('m'));
+                } else {
+                    $annualDays = ($employmentType === 'probation') ? 0.0 : 14.0;
+                    $casualDays = ($employmentType === 'probation') ? 0.0 : 7.0;
+                    $matDays = $maternityEligible ? 84.0 : 0.0;
+                    $balStmt = $pdo->prepare("
+                        INSERT INTO leave_balances 
+                        (employee_id, year, annual_total, casual_total, monthly_quota, medical_total, maternity_total) 
+                        VALUES (?, ?, ?, ?, 4.0, 14.0, ?)
+                        ON DUPLICATE KEY UPDATE annual_total = VALUES(annual_total), casual_total = VALUES(casual_total), monthly_quota = 4.0
+                    ");
+                    $balStmt->execute([$newId, (int)date('Y'), $annualDays, $casualDays, $matDays]);
+                }
 
                 $message = "Employee {$name} (#{$machineId}) registered successfully as " . ($employmentType === 'probation' ? "Probation ({$probationMonths} Months)" : "Confirmed") . "!";
             } catch (Exception $e) {
@@ -208,15 +216,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
                 $stmt = $pdo->prepare($sql);
                 $stmt->execute($params);
 
-                // Update leave balances according to employment type & maternity
-                $annualDays = ($employmentType === 'probation') ? 0.0 : 14.0;
-                $casualDays = ($employmentType === 'probation') ? 0.0 : 7.0;
-                $balUpdate = $pdo->prepare("
-                    UPDATE leave_balances 
-                    SET annual_total = ?, casual_total = ?, monthly_quota = 4.0, maternity_total = ? 
-                    WHERE employee_id = ? AND year = ?
-                ");
-                $balUpdate->execute([$annualDays, $casualDays, $maternityEligible ? 84.0 : 0.0, $empId, (int)date('Y')]);
+                // Sync dynamic leave balances according to employment type, join date & maternity (preserves *_used)
+                if (function_exists('sync_employee_leave_balances')) {
+                    sync_employee_leave_balances($pdo, $empId, (int)date('Y'), (int)date('m'));
+                } else {
+                    $annualDays = ($employmentType === 'probation') ? 0.0 : 14.0;
+                    $casualDays = ($employmentType === 'probation') ? 0.0 : 7.0;
+                    $balUpdate = $pdo->prepare("
+                        UPDATE leave_balances 
+                        SET annual_total = ?, casual_total = ?, monthly_quota = 4.0, maternity_total = ? 
+                        WHERE employee_id = ? AND year = ?
+                    ");
+                    $balUpdate->execute([$annualDays, $casualDays, $maternityEligible ? 84.0 : 0.0, $empId, (int)date('Y')]);
+                }
 
                 $message = "Employee details updated successfully (" . ucfirst($employmentType) . ")!";
             } catch (Exception $e) {

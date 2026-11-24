@@ -37,30 +37,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
 
     if ($action === 'apply_leave') {
         $type = $_POST['leave_type'] ?? 'Casual';
+        $duration = $_POST['duration'] ?? 'full';
         $start = $_POST['start_date'] ?? date('Y-m-d');
         $end = $_POST['end_date'] ?? $start;
         $reason = trim($_POST['reason'] ?? '');
 
-        $isProbation = ($user['employment_type'] ?? 'confirmed') === 'probation';
+        $applyYear = (int)date('Y', strtotime($start));
+        $applyMonth = (int)date('m', strtotime($start));
 
-        // Security check for Maternity & Probation
+        // Calculate dynamic leave entitlement for the requested leave date using fresh $emp data
+        $applyAccrual = calculate_employee_annual_leave_accrual($emp, $applyYear, $applyMonth);
+        sync_employee_leave_balances($pdo, $empId, $applyYear, $applyMonth);
+
+        $balCheckStmt = $pdo->prepare("SELECT * FROM leave_balances WHERE employee_id = ? AND year = ?");
+        $balCheckStmt->execute([$empId, $applyYear]);
+        $applyBal = $balCheckStmt->fetch() ?: [
+            'annual_total' => $applyAccrual['annual_total'], 'annual_used' => 0.0,
+            'casual_total' => $applyAccrual['casual_total'], 'casual_used' => 0.0
+        ];
+
+        $sT = strtotime($start);
+        $eT = strtotime($end);
+        if ($duration === 'half' || $type === 'Half Day' || $type === 'Short Leave') {
+            $days = 0.5;
+            $end = $start;
+        } else {
+            $days = max(1, round(($eT - $sT) / 86400) + 1);
+        }
+
+        $annualRemCheck = max(0, (float)$applyBal['annual_total'] - (float)$applyBal['annual_used']);
+        $casualRemCheck = max(0, (float)$applyBal['casual_total'] - (float)$applyBal['casual_used']);
+
         if ($type === 'Maternity' && !$isMaternityEligible) {
             $error = "Maternity leave is only available for eligible female staff.";
-        } elseif ($isProbation && in_array($type, ['Annual', 'Casual'])) {
-            $error = "Employees under probation are only eligible for Monthly Leaves (4 days/month). Annual and Casual leaves cannot be applied until confirmation.";
+        } elseif ($type === 'Casual' && $applyAccrual['casual_total'] <= 0) {
+            $error = "Casual leaves are not available yet. They unlock after your 1-year appointment date (" . ($applyAccrual['unlock_date'] ?? 'confirmation') . ").";
+        } elseif ($type === 'Casual' && $days > $casualRemCheck) {
+            $error = "Insufficient Casual Leave balance. Requested: {$days} day(s), Available: {$casualRemCheck} of {$applyBal['casual_total']} day(s).";
+        } elseif ($type === 'Annual' && $applyAccrual['annual_total'] <= 0) {
+            $error = "Annual leaves are not yet available. " . $applyAccrual['description'];
+        } elseif ($type === 'Annual' && $days > $annualRemCheck) {
+            $hint = ($annualRemCheck == 0.5) ? " Please select 'Half Day (0.5 Day)' duration or wait for next month's +0.5 accrual." : "";
+            $error = "Insufficient Annual Leave balance. Requested: {$days} day(s), Available: {$annualRemCheck} day(s) (Entitlement: {$applyBal['annual_total']}, Used: {$applyBal['annual_used']}).{$hint}";
         } else {
-            $sT = strtotime($start);
-            $eT = strtotime($end);
-            $days = max(1, round(($eT - $sT) / 86400) + 1);
-            if ($type === 'Half Day' || $type === 'Short Leave') $days = 0.5;
-
             try {
                 $ins = $pdo->prepare("
                     INSERT INTO leaves (employee_id, leave_type, start_date, end_date, total_days, reason, status)
                     VALUES (?, ?, ?, ?, ?, ?, 'Pending')
                 ");
                 $ins->execute([$empId, $type, $start, $end, $days, $reason]);
-                $message = "Leave application submitted successfully! Management will review and authorize it.";
+                $message = "Leave application ({$type} - {$days} day" . ($days == 1 ? '' : 's') . ") submitted successfully! Management will review and authorize it.";
             } catch (Exception $e) {
                 $error = "Error: " . $e->getMessage();
             }
@@ -97,12 +123,28 @@ $totalLateMins = 0;
 $lateDaysCount = 0;
 $totalOtMins = 0;
 $presentDays = 0;
+$approvedLeavesMonth = 0;
+$noPayDays = 0;
+$missingPunchCount = 0;
+$monthlyLeavesUsedThisMonth = 0.0;
+$monthlyQuota = 4.0;
+$monthlyRemaining = 4.0;
+$isProbation = ($emp['employment_type'] ?? 'confirmed') === 'probation';
+$leaveAccrual = [
+    'stage' => 'confirmed_permanent', 'annual_total' => 14.0, 'casual_total' => 7.0,
+    'monthly_quota' => 4.0, 'is_accruing' => false, 'unlock_date' => '', 'badge' => 'Confirmed Employee', 'description' => ''
+];
 $myLeaves = [];
 $myPunches = [];
 
 if (isset($pdo)) {
     try {
-        // Balances
+        // Calculate dynamic leave accrual & sync balances using fresh $emp data
+        $selectedMonthNum = (int)date('m', strtotime($selectedMonth . '-01'));
+        $leaveAccrual = calculate_employee_annual_leave_accrual($emp, $year, $selectedMonthNum);
+        sync_employee_leave_balances($pdo, $empId, $year, $selectedMonthNum);
+
+        // Fetch refreshed balances
         $bStmt = $pdo->prepare("SELECT * FROM leave_balances WHERE employee_id = ? AND year = ?");
         $bStmt->execute([$empId, $year]);
         $rowBal = $bStmt->fetch();
@@ -110,7 +152,7 @@ if (isset($pdo)) {
             $balance = array_merge($balance, $rowBal);
         }
 
-        // Monthly Timesheet Calculation with Sri Lanka Holidays & Adjusted No-Pay
+        // Monthly Timesheet Calculation (7-Day Open Clinic & Adjusted No-Pay)
         $portalTimesheet = calculate_employee_timesheet($pdo, $empId, $startDate, $endDate);
         $myAttendance = $portalTimesheet['days'];
         $presentDays = $portalTimesheet['totals']['present_days'];
@@ -120,8 +162,8 @@ if (isset($pdo)) {
         $approvedLeavesMonth = $portalTimesheet['totals']['leave_days'];
         $noPayDays = $portalTimesheet['totals']['nopay_days'];
 
-        // Check probation status
-        $isProbation = ($user['employment_type'] ?? 'confirmed') === 'probation';
+        // Check probation status from fresh $emp
+        $isProbation = ($emp['employment_type'] ?? 'confirmed') === 'probation';
 
         // Monthly leaves used this selected month
         $monthlyLeavesUsedThisMonth = 0.0;
@@ -344,17 +386,25 @@ require_once __DIR__ . '/includes/sidebar.php';
     <div class="bg-slate-900/70 border border-slate-800/80 rounded-2xl p-6">
         <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
             <h3 class="font-serif font-bold text-base text-white">My Leave Quotas & Balances</h3>
-            <?php if ($isProbation): ?>
+            <?php if ($leaveAccrual['stage'] === 'probation_joining_year'): ?>
                 <?php
-                $probMonths = (int)($user['probation_months'] ?? 6);
-                $joinDate = $user['join_date'] ?? date('Y-m-d');
-                $probEnd = !empty($user['probation_end_date']) ? $user['probation_end_date'] : date('Y-m-d', strtotime("+{$probMonths} months", strtotime($joinDate)));
+                $probMonths = (int)($emp['probation_months'] ?? 6);
+                $joinDate = $emp['join_date'] ?? date('Y-m-d');
+                $probEnd = !empty($emp['probation_end_date']) ? $emp['probation_end_date'] : date('Y-m-d', strtotime("+{$probMonths} months", strtotime($joinDate)));
                 $today = date('Y-m-d');
                 $daysLeft = max(0, round((strtotime($probEnd) - strtotime($today)) / 86400));
                 $isDue = ($today >= $probEnd);
                 ?>
                 <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                    <i class="fa-solid fa-clock-rotate-left text-[11px]"></i> Probation (<?= $probMonths ?> Months &bull; <?= $isDue ? 'Confirmation Due' : "{$daysLeft} days remaining" ?>)
+                    <i class="fa-solid fa-clock-rotate-left text-[11px]"></i> Probation <?= $probMonths ?>M (<?= $isDue ? 'Confirmation Due' : "{$daysLeft} days left" ?> &bull; 4 Monthly Only)
+                </span>
+            <?php elseif ($leaveAccrual['is_accruing']): ?>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                    <i class="fa-solid fa-chart-line text-[11px]"></i> Accruing Annual (+0.5d/mo) &bull; Full 14+7 unlocks <?= htmlspecialchars($leaveAccrual['unlock_date']) ?>
+                </span>
+            <?php elseif ($leaveAccrual['stage'] === 'confirmed_post_appointment'): ?>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                    <i class="fa-solid fa-award text-[11px]"></i> 1-Yr Milestone Reached (14 Annual + 7 Casual + 4 Monthly &bull; Balanced)
                 </span>
             <?php else: ?>
                 <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-sky-500/15 text-sky-300 border border-sky-500/30">
@@ -367,45 +417,54 @@ require_once __DIR__ . '/includes/sidebar.php';
             <div class="p-3.5 rounded-xl bg-gold-950/20 border border-gold-500/30">
                 <span class="text-xs text-gold-400 block font-semibold">Monthly Leave (<?= date('M', strtotime($selectedMonth . '-01')) ?>)</span>
                 <div class="mt-1 flex items-baseline justify-between">
-                    <span class="text-lg font-bold text-gold-300"><?= $monthlyRemaining ?></span>
-                    <span class="text-[11px] text-slate-400">of 4.0 Days</span>
+                    <span class="text-lg font-bold text-gold-300"><?= rtrim(rtrim(number_format($monthlyRemaining, 1), '0'), '.') ?></span>
+                    <span class="text-[11px] text-slate-400">of 4 Days</span>
                 </div>
-                <p class="text-[10px] text-slate-400 mt-0.5">Used: <?= $monthlyLeavesUsedThisMonth ?> days</p>
+                <p class="text-[10px] text-slate-400 mt-0.5">Used: <?= rtrim(rtrim(number_format($monthlyLeavesUsedThisMonth, 1), '0'), '.') ?> days</p>
             </div>
 
             <!-- 2. Annual Leave -->
             <div class="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
                 <span class="text-xs text-slate-400 block">Annual Leave</span>
-                <?php if ($isProbation): ?>
+                <?php if ($leaveAccrual['stage'] === 'probation_joining_year'): ?>
                     <div class="mt-1 flex items-baseline justify-between">
-                        <span class="text-xs font-semibold text-amber-400">Not Eligible</span>
-                        <span class="text-[10px] text-slate-500 font-mono">Probation</span>
+                        <span class="text-xs font-semibold text-amber-400">Joining Year</span>
+                        <span class="text-[10px] text-slate-500 font-mono">0 of 0</span>
                     </div>
-                    <p class="text-[10px] text-slate-500 mt-0.5">0 of 0 Days</p>
+                    <p class="text-[10px] text-slate-500 mt-0.5">+0.5d/mo starts Jan <?= ((int)date('Y', strtotime($emp['join_date'] ?? date('Y-m-d'))) + 1) ?></p>
+                <?php elseif ($leaveAccrual['is_accruing']): ?>
+                    <?php $annRemDisp = max(0, (float)$balance['annual_total'] - (float)$balance['annual_used']); ?>
+                    <div class="mt-1 flex items-baseline justify-between">
+                        <span class="text-lg font-bold text-amber-300"><?= rtrim(rtrim(number_format($annRemDisp, 1), '0'), '.') ?></span>
+                        <span class="text-[11px] text-slate-400">of <?= rtrim(rtrim(number_format((float)$balance['annual_total'], 1), '0'), '.') ?> Accrued</span>
+                    </div>
+                    <p class="text-[10px] text-amber-400/90 mt-0.5">+0.5d/mo &bull; Used: <?= rtrim(rtrim(number_format((float)$balance['annual_used'], 1), '0'), '.') ?>d</p>
                 <?php else: ?>
+                    <?php $annRemDisp = max(0, (float)$balance['annual_total'] - (float)$balance['annual_used']); ?>
                     <div class="mt-1 flex items-baseline justify-between">
-                        <span class="text-lg font-bold text-white"><?= $balance['annual_total'] - $balance['annual_used'] ?></span>
-                        <span class="text-[11px] text-slate-500">of <?= $balance['annual_total'] ?></span>
+                        <span class="text-lg font-bold text-white"><?= rtrim(rtrim(number_format($annRemDisp, 1), '0'), '.') ?></span>
+                        <span class="text-[11px] text-slate-500">of <?= rtrim(rtrim(number_format((float)$balance['annual_total'], 1), '0'), '.') ?></span>
                     </div>
-                    <p class="text-[10px] text-slate-400 mt-0.5">Used: <?= $balance['annual_used'] ?> days</p>
+                    <p class="text-[10px] text-slate-400 mt-0.5">Used: <?= rtrim(rtrim(number_format((float)$balance['annual_used'], 1), '0'), '.') ?> days</p>
                 <?php endif; ?>
             </div>
 
             <!-- 3. Casual Leave -->
             <div class="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
                 <span class="text-xs text-slate-400 block">Casual Leave</span>
-                <?php if ($isProbation): ?>
+                <?php if ($leaveAccrual['casual_total'] <= 0): ?>
                     <div class="mt-1 flex items-baseline justify-between">
                         <span class="text-xs font-semibold text-amber-400">Not Eligible</span>
-                        <span class="text-[10px] text-slate-500 font-mono">Probation</span>
+                        <span class="text-[10px] text-slate-500 font-mono">0 of 0</span>
                     </div>
-                    <p class="text-[10px] text-slate-500 mt-0.5">0 of 0 Days</p>
+                    <p class="text-[10px] text-slate-500 mt-0.5">Unlocks <?= htmlspecialchars($leaveAccrual['unlock_date'] ?: 'on 1-Yr Confirmation') ?></p>
                 <?php else: ?>
+                    <?php $casRemDisp = max(0, (float)$balance['casual_total'] - (float)$balance['casual_used']); ?>
                     <div class="mt-1 flex items-baseline justify-between">
-                        <span class="text-lg font-bold text-white"><?= $balance['casual_total'] - $balance['casual_used'] ?></span>
-                        <span class="text-[11px] text-slate-500">of <?= $balance['casual_total'] ?></span>
+                        <span class="text-lg font-bold text-white"><?= rtrim(rtrim(number_format($casRemDisp, 1), '0'), '.') ?></span>
+                        <span class="text-[11px] text-slate-500">of <?= rtrim(rtrim(number_format((float)$balance['casual_total'], 1), '0'), '.') ?></span>
                     </div>
-                    <p class="text-[10px] text-slate-400 mt-0.5">Used: <?= $balance['casual_used'] ?> days</p>
+                    <p class="text-[10px] text-slate-400 mt-0.5">Used: <?= rtrim(rtrim(number_format((float)$balance['casual_used'], 1), '0'), '.') ?> days</p>
                 <?php endif; ?>
             </div>
 
@@ -651,12 +710,27 @@ require_once __DIR__ . '/includes/sidebar.php';
                 </label>
                 <select name="leave_type" id="portal_leave_type" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 focus:border-gold-500 focus:outline-none">
                     <option value="Monthly" class="text-gold-300 font-semibold">Monthly Leave (<?= $monthlyRemaining ?> of 4 days remaining for <?= date('M Y') ?>)</option>
-                    <?php if ($isProbation): ?>
-                        <option value="Casual" disabled class="text-slate-600">Casual Leave (Not eligible during probation)</option>
-                        <option value="Annual" disabled class="text-slate-600">Annual Leave (Not eligible during probation)</option>
+                    <?php
+                    // Use $leaveAccrual (dynamic accrual) for Annual & Casual eligibility
+                    $accrualForDropdown = $leaveAccrual ?? ['annual_total' => 14.0, 'casual_total' => 7.0, 'is_accruing' => false, 'stage' => 'confirmed_permanent'];
+                    $annualAvailable = ($accrualForDropdown['annual_total'] ?? 0) > 0;
+                    $casualAvailable = ($accrualForDropdown['casual_total'] ?? 0) > 0;
+                    $annualRemaining  = max(0, ($balance['annual_total'] ?? $accrualForDropdown['annual_total']) - ($balance['annual_used'] ?? 0));
+                    $casualRemaining  = max(0, ($balance['casual_total'] ?? $accrualForDropdown['casual_total']) - ($balance['casual_used'] ?? 0));
+                    ?>
+                    <?php if ($casualAvailable): ?>
+                        <option value="Casual">Casual Leave (<?= number_format($casualRemaining, 1) ?> remaining of 7)</option>
                     <?php else: ?>
-                        <option value="Casual">Casual Leave (<?= $balance['casual_total'] - $balance['casual_used'] ?> remaining of 7)</option>
-                        <option value="Annual">Annual Leave (<?= $balance['annual_total'] - $balance['annual_used'] ?> remaining of 14)</option>
+                        <option value="Casual" disabled class="text-slate-600">Casual Leave – Unlocks after 1-Year Confirmation</option>
+                    <?php endif; ?>
+                    <?php if ($annualAvailable): ?>
+                        <?php if (!empty($accrualForDropdown['is_accruing'])): ?>
+                            <option value="Annual">Annual Leave – Accrued <?= number_format($accrualForDropdown['annual_total'], 1) ?> days (<?= number_format($annualRemaining, 1) ?> remaining)</option>
+                        <?php else: ?>
+                            <option value="Annual">Annual Leave (<?= number_format($annualRemaining, 1) ?> remaining of 14)</option>
+                        <?php endif; ?>
+                    <?php else: ?>
+                        <option value="Annual" disabled class="text-slate-600">Annual Leave – Not yet eligible (Joining Year)</option>
                     <?php endif; ?>
                     <option value="Medical">Medical / Sick Leave (<?= $balance['medical_total'] - $balance['medical_used'] ?> remaining)</option>
                     <?php if ($isMaternityEligible): ?>
@@ -669,20 +743,43 @@ require_once __DIR__ . '/includes/sidebar.php';
                 </select>
             </div>
 
+            <!-- Duration (Full Day vs Half Day 0.5) -->
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                    Leave Duration *
+                </label>
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="flex items-center gap-2 p-2.5 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer hover:border-gold-500/50 transition-colors">
+                        <input type="radio" name="duration" value="full" checked onchange="togglePortalDuration()" class="text-gold-400 focus:ring-gold-500">
+                        <div>
+                            <span class="text-xs font-semibold text-white block">Full Day(s)</span>
+                            <span class="text-[10px] text-slate-400">1.0 day per date</span>
+                        </div>
+                    </label>
+                    <label class="flex items-center gap-2 p-2.5 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer hover:border-gold-500/50 transition-colors">
+                        <input type="radio" name="duration" value="half" onchange="togglePortalDuration()" class="text-gold-400 focus:ring-gold-500">
+                        <div>
+                            <span class="text-xs font-semibold text-amber-300 block">Half Day (0.5 Day)</span>
+                            <span class="text-[10px] text-slate-400">Uses 0.5 from quota</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
             <!-- Dates -->
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
                         Start Date *
                     </label>
-                    <input type="date" name="start_date" required value="<?= date('Y-m-d') ?>"
+                    <input type="date" name="start_date" id="portal_start_date" onchange="syncPortalEndDate()" required value="<?= date('Y-m-d') ?>"
                         class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 font-mono focus:border-gold-500 focus:outline-none">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
                         End Date *
                     </label>
-                    <input type="date" name="end_date" required value="<?= date('Y-m-d') ?>"
+                    <input type="date" name="end_date" id="portal_end_date" required value="<?= date('Y-m-d') ?>"
                         class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 font-mono focus:border-gold-500 focus:outline-none">
                 </div>
             </div>
@@ -777,6 +874,27 @@ require_once __DIR__ . '/includes/sidebar.php';
         const dInput = document.querySelector('#punchModal input[name="date"]');
         if (dInput) dInput.value = date;
         openPunchModal();
+    }
+    function togglePortalDuration() {
+        const isHalf = document.querySelector('input[name="duration"]:checked')?.value === 'half';
+        const sIn = document.getElementById('portal_start_date');
+        const eIn = document.getElementById('portal_end_date');
+        if (isHalf && sIn && eIn) {
+            eIn.value = sIn.value;
+            eIn.readOnly = true;
+            eIn.classList.add('opacity-60');
+        } else if (eIn) {
+            eIn.readOnly = false;
+            eIn.classList.remove('opacity-60');
+        }
+    }
+    function syncPortalEndDate() {
+        const isHalf = document.querySelector('input[name="duration"]:checked')?.value === 'half';
+        const sIn = document.getElementById('portal_start_date');
+        const eIn = document.getElementById('portal_end_date');
+        if (sIn && eIn && (isHalf || eIn.value < sIn.value)) {
+            eIn.value = sIn.value;
+        }
     }
 </script>
 

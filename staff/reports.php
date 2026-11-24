@@ -49,18 +49,14 @@ try {
     $holidayCount = (int)$pdo->query("SELECT COUNT(*) FROM holidays")->fetchColumn();
 } catch (Exception $e) {}
 
-// Calculate working days in period (up to today, excluding Sundays & statutory holidays)
+// Calculate working days in period (up to today — 7-day open clinic: Sundays & Poya Days are working days)
 $todayStr = date('Y-m-d');
 $curPeriod = strtotime($startDate);
 $endPeriod = min(strtotime($endDate), strtotime($todayStr));
 $workingDaysInPeriod = 0;
 if ($curPeriod <= $endPeriod) {
     while ($curPeriod <= $endPeriod) {
-        $dStr = date('Y-m-d', $curPeriod);
-        $isSun = (date('w', $curPeriod) == 0);
-        if (!$isSun && !isset($holidaysMap[$dStr])) {
-            $workingDaysInPeriod++;
-        }
+        $workingDaysInPeriod++;
         $curPeriod = strtotime('+1 day', $curPeriod);
     }
 }
@@ -352,7 +348,7 @@ require_once __DIR__ . '/includes/sidebar.php';
                         </span>
                     </div>
                     <p class="text-[11px] text-slate-400 mt-0.5">
-                        Statutory Full Moon Poya Days & Mercantile Holidays are recognized automatically so employees are <strong class="text-slate-200">not penalized as No-Pay</strong> on official holidays.
+                        Sapphire Clinic operates <strong class="text-slate-200">7 days a week</strong> (Sundays &amp; Poya Days are open working days). Holidays are tracked for shift reference; staff take scheduled offs using their <strong class="text-gold-300">4 Monthly Leaves</strong>.
                     </p>
                 </div>
             </div>
@@ -525,11 +521,11 @@ require_once __DIR__ . '/includes/sidebar.php';
                         </span>
                     </div>
 
-                    <!-- Holidays & Off Days -->
+                    <!-- Clinic Schedule -->
                     <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-3.5">
-                        <span class="text-[10px] text-slate-400 block uppercase font-semibold">Off & Holidays</span>
-                        <span class="text-xl font-bold text-cyan-300 mt-1 block font-mono"><?= $totals['holiday_days'] + $totals['off_days'] ?></span>
-                        <span class="text-[10px] text-slate-400"><?= $totals['holiday_days'] ?> Poya/Mer. &bull; <?= $totals['off_days'] ?> Sun</span>
+                        <span class="text-[10px] text-slate-400 block uppercase font-semibold">Clinic Policy</span>
+                        <span class="text-xl font-bold text-cyan-300 mt-1 block font-mono">7 Days</span>
+                        <span class="text-[10px] text-slate-400">Sun &amp; Poya Open</span>
                     </div>
                 </div>
 
@@ -593,7 +589,7 @@ require_once __DIR__ . '/includes/sidebar.php';
                                         </td>
                                         <td class="py-2.5 px-3 font-sans text-xs text-slate-400">
                                             <?php if ($dRow['is_nopay']): ?>
-                                                <span class="text-rose-400 font-semibold">⚠️ Unexcused Absence &bull; Adjusted as No-Pay</span>
+                                                <span class="text-rose-400 font-semibold">⚠️ <?= htmlspecialchars($dRow['notes'] ?: 'Unexcused Absence • Adjusted as No-Pay') ?></span>
                                             <?php else: ?>
                                                 <?= htmlspecialchars($dRow['notes']) ?>
                                             <?php endif; ?>

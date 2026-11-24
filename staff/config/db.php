@@ -59,6 +59,9 @@ try {
     // Ensure Sri Lanka statutory & Poya holidays table exists
     require_once __DIR__ . '/../includes/holidays.php';
     ensure_holidays_table($pdo);
+
+    // Dynamic Leave Calculator
+    require_once __DIR__ . '/../includes/leave_calculator.php';
 } catch (PDOException $e) {
     // If running in development or before configuring Hostinger credentials, show a friendly setup message
     $db_connection_error = $e->getMessage();

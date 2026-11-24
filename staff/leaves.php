@@ -34,8 +34,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
                 ");
                 $upStmt->execute([$user['id'], $leaveId]);
 
-                // Deduct from leave balance
+                // Ensure leave_balances row exists & quotas are synced before deducting used days
                 $year = (int)date('Y', strtotime($leave['start_date']));
+                $leaveMonth = (int)date('m', strtotime($leave['start_date']));
+                if (function_exists('sync_employee_leave_balances')) {
+                    sync_employee_leave_balances($pdo, $leave['employee_id'], $year, $leaveMonth);
+                }
+
+                // Deduct from leave balance
                 $col = match($leave['leave_type']) {
                     'Annual' => 'annual_used',
                     'Casual' => 'casual_used',
@@ -54,21 +60,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
                     $balStmt->execute([$leave['total_days'], $leave['employee_id'], $year]);
                 }
 
-                // Update attendance logs for those dates to 'On Leave'
+                // Update attendance logs for those dates
                 $cur = strtotime($leave['start_date']);
                 $end = strtotime($leave['end_date']);
                 $empMachineId = $pdo->query("SELECT machine_user_id FROM employees WHERE id = " . (int)$leave['employee_id'])->fetchColumn();
+                $isHalfDayLeave = ((float)$leave['total_days'] < 1);
 
-                $attLeaveStmt = $pdo->prepare("
-                    INSERT INTO attendance_logs (employee_id, machine_user_id, date, status, source, remarks)
-                    VALUES (?, ?, ?, 'On Leave', 'Manual', ?)
-                    ON DUPLICATE KEY UPDATE status = 'On Leave', remarks = VALUES(remarks)
-                ");
+                if ($isHalfDayLeave) {
+                    // For half-day leaves, preserve any existing punch times; only insert Half Day if absent
+                    $attLeaveStmt = $pdo->prepare("
+                        INSERT INTO attendance_logs (employee_id, machine_user_id, date, status, source, remarks)
+                        VALUES (?, ?, ?, 'Half Day', 'Manual', ?)
+                        ON DUPLICATE KEY UPDATE remarks = CONCAT(COALESCE(remarks, ''), IF(remarks IS NULL OR remarks = '', '', ' • '), VALUES(remarks))
+                    ");
+                    $attLeaveStmt->execute([$leave['employee_id'], $empMachineId, $leave['start_date'], 'Half-Day ' . $leave['leave_type'] . ' Leave']);
+                } else {
+                    $attLeaveStmt = $pdo->prepare("
+                        INSERT INTO attendance_logs (employee_id, machine_user_id, date, status, source, remarks)
+                        VALUES (?, ?, ?, 'On Leave', 'Manual', ?)
+                        ON DUPLICATE KEY UPDATE status = 'On Leave', remarks = VALUES(remarks)
+                    ");
 
-                while ($cur <= $end) {
-                    $dStr = date('Y-m-d', $cur);
-                    $attLeaveStmt->execute([$leave['employee_id'], $empMachineId, $dStr, $leave['leave_type'] . ' Leave']);
-                    $cur = strtotime('+1 day', $cur);
+                    while ($cur <= $end) {
+                        $dStr = date('Y-m-d', $cur);
+                        $attLeaveStmt->execute([$leave['employee_id'], $empMachineId, $dStr, $leave['leave_type'] . ' Leave']);
+                        $cur = strtotime('+1 day', $cur);
+                    }
                 }
 
                 $pdo->commit();
@@ -98,27 +115,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
         // Apply leave
         $empId = (int)($_POST['employee_id'] ?? $user['id']);
         $type = $_POST['leave_type'] ?? 'Casual';
+        $duration = $_POST['duration'] ?? 'full';
         $start = $_POST['start_date'] ?? date('Y-m-d');
         $end = $_POST['end_date'] ?? $start;
         $reason = trim($_POST['reason'] ?? '');
         
         $startT = strtotime($start);
         $endT = strtotime($end);
-        $days = max(1, round(($endT - $startT) / 86400) + 1);
-        if ($type === 'Half Day' || $type === 'Short Leave') {
+        if ($duration === 'half' || $type === 'Half Day' || $type === 'Short Leave') {
             $days = 0.5;
+            $end = $start;
+        } else {
+            $days = max(1, round(($endT - $startT) / 86400) + 1);
         }
 
         try {
-            // Check probation restrictions
-            $empData = $pdo->query("SELECT employment_type, name FROM employees WHERE id = {$empId}")->fetch();
-            if ($empData && ($empData['employment_type'] ?? 'confirmed') === 'probation' && in_array($type, ['Annual', 'Casual'])) {
-                throw new Exception("{$empData['name']} is currently on Probation. Probation employees are only entitled to Monthly Leaves (4 days/month). Annual and Casual leaves cannot be applied until confirmation.");
+            // Check dynamic leave entitlement & accrual rules
+            $empFetch = $pdo->prepare("SELECT * FROM employees WHERE id = ?");
+            $empFetch->execute([$empId]);
+            $empData = $empFetch->fetch();
+
+            if ($empData) {
+                $applyYear = (int)date('Y', $startT);
+                $applyMonth = (int)date('m', $startT);
+                $accrual = calculate_employee_annual_leave_accrual($empData, $applyYear, $applyMonth);
+                sync_employee_leave_balances($pdo, $empId, $applyYear, $applyMonth);
+
+                $balStmt = $pdo->prepare("SELECT * FROM leave_balances WHERE employee_id = ? AND year = ?");
+                $balStmt->execute([$empId, $applyYear]);
+                $empBal = $balStmt->fetch() ?: [
+                    'annual_total' => $accrual['annual_total'], 'annual_used' => 0.0,
+                    'casual_total' => $accrual['casual_total'], 'casual_used' => 0.0
+                ];
+
+                if ($type === 'Casual' && $accrual['casual_total'] <= 0) {
+                    throw new Exception("{$empData['name']} is not yet eligible for Casual Leave. Casual leaves unlock on {$accrual['unlock_date']} (after 1-year appointment date).");
+                }
+                if ($type === 'Annual' && $accrual['annual_total'] <= 0) {
+                    throw new Exception("{$empData['name']} is not yet eligible for Annual Leave. {$accrual['description']}");
+                }
+                if ($type === 'Annual') {
+                    $annRem = max(0, (float)$empBal['annual_total'] - (float)$empBal['annual_used']);
+                    if ($days > $annRem) {
+                        throw new Exception("{$empData['name']} has only {$annRem} Annual day(s) remaining (Accrued/Entitlement: {$empBal['annual_total']}, Used: {$empBal['annual_used']}). Requested: {$days} day(s).");
+                    }
+                }
+                if ($type === 'Casual') {
+                    $casRem = max(0, (float)$empBal['casual_total'] - (float)$empBal['casual_used']);
+                    if ($days > $casRem) {
+                        throw new Exception("{$empData['name']} has only {$casRem} Casual day(s) remaining (Entitlement: {$empBal['casual_total']}, Used: {$empBal['casual_used']}). Requested: {$days} day(s).");
+                    }
+                }
             }
 
             if ($type === 'Monthly') {
                 $monthStr = date('Y-m', $startT);
-                $usedInMonth = (float)$pdo->query("SELECT COALESCE(SUM(total_days), 0) FROM leaves WHERE employee_id = {$empId} AND leave_type = 'Monthly' AND status != 'Rejected' AND DATE_FORMAT(start_date, '%Y-%m') = '{$monthStr}'")->fetchColumn();
+                $mlStmt = $pdo->prepare("SELECT COALESCE(SUM(total_days), 0) FROM leaves WHERE employee_id = ? AND leave_type = 'Monthly' AND status != 'Rejected' AND DATE_FORMAT(start_date, '%Y-%m') = ?");
+                $mlStmt->execute([$empId, $monthStr]);
+                $usedInMonth = (float)$mlStmt->fetchColumn();
                 if ($usedInMonth + $days > 4) {
                     $reason .= " [Note: Exceeds 4 monthly leaves quota: " . ($usedInMonth + $days) . "/4 for " . date('M Y', $startT) . "]";
                 }
@@ -129,7 +183,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
                 VALUES (?, ?, ?, ?, ?, ?, 'Pending')
             ");
             $ins->execute([$empId, $type, $start, $end, $days, $reason]);
-            $message = "Leave application submitted successfully for review.";
+            $message = "Leave application ({$type} - {$days} day" . ($days == 1 ? '' : 's') . ") submitted successfully for review.";
         } catch (Exception $e) {
             $error = "Failed to submit leave: " . $e->getMessage();
         }
@@ -379,20 +433,43 @@ require_once __DIR__ . '/includes/sidebar.php';
                 </select>
             </div>
 
+            <!-- Duration (Full Day vs Half Day 0.5) -->
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                    Leave Duration *
+                </label>
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="flex items-center gap-2 p-2.5 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer hover:border-gold-500/50 transition-colors">
+                        <input type="radio" name="duration" value="full" checked onchange="toggleAdminDuration()" class="text-gold-400 focus:ring-gold-500">
+                        <div>
+                            <span class="text-xs font-semibold text-white block">Full Day(s)</span>
+                            <span class="text-[10px] text-slate-400">1.0 day per date</span>
+                        </div>
+                    </label>
+                    <label class="flex items-center gap-2 p-2.5 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer hover:border-gold-500/50 transition-colors">
+                        <input type="radio" name="duration" value="half" onchange="toggleAdminDuration()" class="text-gold-400 focus:ring-gold-500">
+                        <div>
+                            <span class="text-xs font-semibold text-amber-300 block">Half Day (0.5 Day)</span>
+                            <span class="text-[10px] text-slate-400">Deducts 0.5 day</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
             <!-- Dates -->
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
                         Start Date *
                     </label>
-                    <input type="date" name="start_date" required value="<?= date('Y-m-d') ?>"
+                    <input type="date" name="start_date" id="adm_start_date" onchange="syncAdminEndDate()" required value="<?= date('Y-m-d') ?>"
                         class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 font-mono focus:border-gold-500 focus:outline-none">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
                         End Date *
                     </label>
-                    <input type="date" name="end_date" required value="<?= date('Y-m-d') ?>"
+                    <input type="date" name="end_date" id="adm_end_date" required value="<?= date('Y-m-d') ?>"
                         class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 font-mono focus:border-gold-500 focus:outline-none">
                 </div>
             </div>
@@ -446,6 +523,27 @@ require_once __DIR__ . '/includes/sidebar.php';
     }
     function closeApplyModal() {
         applyModal.classList.add('hidden');
+    }
+    function toggleAdminDuration() {
+        const isHalf = document.querySelector('#applyModal input[name="duration"]:checked')?.value === 'half';
+        const sIn = document.getElementById('adm_start_date');
+        const eIn = document.getElementById('adm_end_date');
+        if (isHalf && sIn && eIn) {
+            eIn.value = sIn.value;
+            eIn.readOnly = true;
+            eIn.classList.add('opacity-60');
+        } else if (eIn) {
+            eIn.readOnly = false;
+            eIn.classList.remove('opacity-60');
+        }
+    }
+    function syncAdminEndDate() {
+        const isHalf = document.querySelector('#applyModal input[name="duration"]:checked')?.value === 'half';
+        const sIn = document.getElementById('adm_start_date');
+        const eIn = document.getElementById('adm_end_date');
+        if (sIn && eIn && (isHalf || eIn.value < sIn.value)) {
+            eIn.value = sIn.value;
+        }
     }
 </script>
 

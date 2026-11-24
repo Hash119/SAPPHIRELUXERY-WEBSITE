@@ -323,8 +323,24 @@ function calculate_employee_timesheet($pdo, $employeeId, $startDate, $endDate) {
             'is_nopay'          => false
         ];
 
+        // Check if employee has an approved leave on this date
+        $leaveMatch = null;
+        foreach ($approvedLeaves as $al) {
+            if ($dStr >= $al['start_date'] && $dStr <= $al['end_date']) {
+                $leaveMatch = $al;
+                break;
+            }
+        }
+
+        // Determine if employee has an actual punch record (not just an 'On Leave' / 'Absent' placeholder row)
+        $hasActualPunch = isset($punches[$dStr]) && (
+            !in_array($punches[$dStr]['status'], ['On Leave', 'Absent']) ||
+            !empty($punches[$dStr]['check_in']) ||
+            !empty($punches[$dStr]['check_out'])
+        );
+
         // 1. Employee punched in on this date
-        if (isset($punches[$dStr])) {
+        if ($hasActualPunch) {
             $p = $punches[$dStr];
             $row['check_in'] = $p['check_in'];
             $row['check_out'] = $p['check_out'];
@@ -351,62 +367,58 @@ function calculate_employee_timesheet($pdo, $employeeId, $startDate, $endDate) {
                 $totals['total_ot_mins'] += $row['overtime_minutes'];
             }
 
-            if (!$isSunday && !isset($holidaysMap[$dStr])) {
-                $totals['working_days']++;
-            }
-        } else {
-            // 2. No punch recorded - Evaluate leave / holiday / weekly off / No-Pay
-            $leaveMatch = null;
-            foreach ($approvedLeaves as $al) {
-                if ($dStr >= $al['start_date'] && $dStr <= $al['end_date']) {
-                    $leaveMatch = $al;
-                    break;
-                }
+            // If employee also had an approved half-day leave on this date, note it
+            if ($leaveMatch && (float)$leaveMatch['total_days'] < 1) {
+                $totals['leave_days'] += (float)$leaveMatch['total_days'];
+                $row['notes'] = ($row['notes'] ? $row['notes'] . ' &bull; ' : '') . 'Half-Day ' . $leaveMatch['leave_type'] . ' Leave';
             }
 
+            // Every day (including Sunday and Poya) is an open clinic working day
+            $totals['working_days']++;
+            if (isset($holidaysMap[$dStr])) {
+                $row['notes'] = ($row['notes'] ? $row['notes'] . ' &bull; ' : '') . $holidaysMap[$dStr]['title'] . ' (Open Shift)';
+            } elseif ($isSunday) {
+                $row['notes'] = ($row['notes'] ? $row['notes'] . ' &bull; ' : '') . 'Sunday (Open Shift)';
+            }
+        } else {
+            // 2. No punch recorded - Evaluate approved leave or No-Pay
             if ($leaveMatch) {
+                $lDayWeight = ((float)$leaveMatch['total_days'] < 1 && $leaveMatch['start_date'] === $leaveMatch['end_date']) ? (float)$leaveMatch['total_days'] : 1;
                 if ($leaveMatch['leave_type'] === 'No Pay') {
                     $row['status'] = 'No-Pay Leave';
                     $row['status_code'] = 'nopay';
                     $row['badge_color'] = 'bg-rose-500/15 text-rose-300 border-rose-500/30';
                     $row['notes'] = 'Authorized No-Pay Leave';
                     $row['is_nopay'] = true;
-                    $totals['nopay_days']++;
+                    $totals['nopay_days'] += $lDayWeight;
                 } else {
-                    $row['status'] = 'Leave (' . $leaveMatch['leave_type'] . ')';
+                    $halfTag = ($lDayWeight < 1) ? ' (0.5d)' : '';
+                    $row['status'] = 'Leave (' . $leaveMatch['leave_type'] . $halfTag . ')';
                     $row['status_code'] = 'leave';
                     $row['badge_color'] = 'bg-purple-500/15 text-purple-300 border-purple-500/30';
-                    $row['notes'] = 'Approved ' . $leaveMatch['leave_type'] . ' Leave';
-                    $totals['leave_days']++;
+                    $row['notes'] = 'Approved ' . $leaveMatch['leave_type'] . ' Leave' . $halfTag;
+                    $totals['leave_days'] += $lDayWeight;
                 }
-                if (!$isSunday && !isset($holidaysMap[$dStr])) {
-                    $totals['working_days']++;
-                }
-            } elseif (isset($holidaysMap[$dStr])) {
-                $h = $holidaysMap[$dStr];
-                $row['status'] = 'Holiday (' . $h['type'] . ')';
-                $row['status_code'] = 'holiday';
-                $row['badge_color'] = ($h['type'] === 'Poya') ? 'bg-amber-400/15 text-amber-300 border-amber-400/30' : 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30';
-                $row['notes'] = $h['title'];
-                $totals['holiday_days']++;
-            } elseif ($isSunday) {
-                $row['status'] = 'Weekly Off';
-                $row['status_code'] = 'off';
-                $row['badge_color'] = 'bg-slate-800 text-slate-400 border-slate-700';
-                $row['notes'] = 'Sunday (Weekly Off)';
-                $totals['off_days']++;
+                $totals['working_days']++;
             } elseif ($isFuture) {
                 $row['status'] = 'Upcoming';
                 $row['status_code'] = 'future';
                 $row['badge_color'] = 'bg-slate-800/50 text-slate-500 border-slate-800';
-                $row['notes'] = 'Scheduled Work Day';
+                $row['notes'] = isset($holidaysMap[$dStr]) ? 'Scheduled Open (' . $holidaysMap[$dStr]['title'] . ')' : ($isSunday ? 'Scheduled Open (Sunday)' : 'Scheduled Work Day');
                 $totals['working_days']++;
             } else {
-                // 3. Regular working day, in the past, NO punch and NO leave -> NO-PAY (ABSENT)
+                // 3. In the past, NO punch and NO leave -> NO-PAY (ABSENT)
+                // The clinic is open 7 days a week; absences without approved leave result in No-Pay.
                 $row['status'] = 'No-Pay (Absent)';
                 $row['status_code'] = 'nopay';
                 $row['badge_color'] = 'bg-rose-500/20 text-rose-300 border-rose-500/40 font-bold';
-                $row['notes'] = 'Unexcused Absence (Loss of Pay)';
+                if (isset($holidaysMap[$dStr])) {
+                    $row['notes'] = 'Unexcused Absence on ' . $holidaysMap[$dStr]['title'] . ' (Clinic Open)';
+                } elseif ($isSunday) {
+                    $row['notes'] = 'Unexcused Absence on Sunday (Clinic Open)';
+                } else {
+                    $row['notes'] = 'Unexcused Absence (Loss of Pay)';
+                }
                 $row['is_nopay'] = true;
                 $totals['nopay_days']++;
                 $totals['working_days']++;
