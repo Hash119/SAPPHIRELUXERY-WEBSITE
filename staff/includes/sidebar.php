@@ -139,6 +139,15 @@ if (isset($pdo) && $isManager) {
             </span>
             <span class="font-medium">My Portal & Leaves</span>
         </a>
+
+        <?php if (!$isManager): ?>
+        <a href="manual_punches.php" class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all <?= $currentPage === 'manual_punches.php' ? 'active-nav bg-gold-500/15 text-gold-400 border border-gold-500/30' : 'nav-item text-slate-300 hover:bg-slate-800/60 hover:text-white' ?>">
+            <span class="w-8 h-8 rounded-lg flex items-center justify-center bg-amber-500/15 text-amber-400 group-hover:bg-amber-500 group-hover:text-slate-950 transition-all shrink-0 shadow-sm">
+                <i class="fa-solid fa-fingerprint text-xs"></i>
+            </span>
+            <span class="font-medium">Manual In/Out</span>
+        </a>
+        <?php endif; ?>
     </nav>
 
     <!-- Bottom Footer (Theme Switcher + Logout) -->
@@ -179,10 +188,10 @@ if (isset($pdo) && $isManager) {
                 <i id="headerThemeIcon" class="fa-solid fa-moon text-sm"></i>
             </button>
 
-            <div class="hidden sm:flex items-center gap-2 text-xs text-slate-400 bg-slate-800/60 px-3 py-1.5 rounded-full border border-slate-700/50">
-                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>System Online</span>
-            </div>
+            <button type="button" id="liveRefreshToggle" onclick="toggleLiveRefresh()" class="hidden sm:flex items-center gap-2 text-xs text-slate-300 bg-slate-800/60 hover:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700/50 transition-colors" title="Live 5-second auto-update (click to pause/resume)">
+                <span id="liveRefreshDot" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span id="liveRefreshLabel">Live 5s</span>
+            </button>
 
             <a href="employee_portal.php" class="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-gold-400 bg-gold-500/10 hover:bg-gold-500/20 rounded-lg border border-gold-500/20 transition-colors">
                 <i class="fa-solid fa-user-circle"></i>
@@ -251,6 +260,12 @@ if (isset($pdo) && $isManager) {
                     <span class="w-7 h-7 rounded-lg flex items-center justify-center bg-gold-500/20 text-gold-400 shrink-0"><i class="fa-solid fa-id-badge text-xs"></i></span>
                     <span>My Staff Portal</span>
                 </a>
+                <?php if (!$isManager): ?>
+                <a href="manual_punches.php" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:bg-slate-800">
+                    <span class="w-7 h-7 rounded-lg flex items-center justify-center bg-amber-500/15 text-amber-400 shrink-0"><i class="fa-solid fa-fingerprint text-xs"></i></span>
+                    <span>Manual In/Out</span>
+                </a>
+                <?php endif; ?>
                 <button onclick="toggleTheme()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 hover:bg-slate-800 mt-2">
                     <span class="w-7 h-7 rounded-lg flex items-center justify-center bg-slate-800 text-slate-300 shrink-0"><i class="fa-solid fa-circle-half-stroke text-xs"></i></span>
                     <span>Switch Dark / Light Theme</span>

@@ -464,6 +464,7 @@ require_once __DIR__ . '/includes/sidebar.php';
         const aPanel = document.getElementById('tabPanelAbsent');
         const pBtn = document.getElementById('tabBtnPresent');
         const aBtn = document.getElementById('tabBtnAbsent');
+        sessionStorage.setItem('sapphire_dash_tab', tab);
 
         if (tab === 'present') {
             pPanel.classList.remove('hidden');
@@ -477,6 +478,12 @@ require_once __DIR__ . '/includes/sidebar.php';
             pBtn.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 text-slate-400 hover:text-emerald-300 border border-transparent';
         }
     }
+
+    // Restore selected Present/Absent tab after 5-second live refresh
+    document.addEventListener('DOMContentLoaded', () => {
+        const savedTab = sessionStorage.getItem('sapphire_dash_tab');
+        if (savedTab === 'absent') switchTodayTab('absent');
+    });
 
     const ctx = document.getElementById('trendChart').getContext('2d');
     new Chart(ctx, {

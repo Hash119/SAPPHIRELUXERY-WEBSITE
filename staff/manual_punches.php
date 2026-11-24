@@ -7,7 +7,8 @@ require_login();
 
 $user = current_user();
 $canAuthorize = can_approve_manual_punch($user);
-$pageTitle = 'Manual Attendance & Authorization History';
+$isManagementView = is_admin_or_manager($user) || $canAuthorize;
+$pageTitle = $isManagementView ? 'Manual Attendance & Authorization History' : 'My Manual In/Out Requests';
 $message = '';
 $error = '';
 
@@ -118,7 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
             $error = $e->getMessage();
         }
     } elseif ($action === 'request') {
-        $empId = (int)($_POST['employee_id'] ?? $user['id']);
+        $empId = $isManagementView ? (int)($_POST['employee_id'] ?? $user['id']) : (int)$user['id'];
         $pDate = $_POST['date'] ?? date('Y-m-d');
         $timeIn = !empty($_POST['requested_in']) ? $_POST['requested_in'] . ':00' : null;
         $timeOut = !empty($_POST['requested_out']) ? $_POST['requested_out'] . ':00' : null;
@@ -144,28 +145,51 @@ $staffList = [];
 
 if (isset($pdo)) {
     try {
-        $pendingPunches = $pdo->query("
-            SELECT m.*, e.name as emp_name, e.calling_name, e.machine_user_id, e.department,
-                   r.name as requester_name
-            FROM manual_punches m
-            JOIN employees e ON m.employee_id = e.id
-            JOIN employees r ON m.requested_by = r.id
-            WHERE m.status = 'Pending'
-            ORDER BY m.requested_at ASC
-        ")->fetchAll();
+        if ($isManagementView) {
+            $pendingPunches = $pdo->query("
+                SELECT m.*, e.name as emp_name, e.calling_name, e.machine_user_id, e.department,
+                       r.name as requester_name
+                FROM manual_punches m
+                JOIN employees e ON m.employee_id = e.id
+                JOIN employees r ON m.requested_by = r.id
+                WHERE m.status = 'Pending'
+                ORDER BY m.requested_at ASC
+            ")->fetchAll();
 
-        $historyPunches = $pdo->query("
-            SELECT m.*, e.name as emp_name, e.calling_name, e.machine_user_id, e.department,
-                   r.name as requester_name, a.name as authorizer_name
-            FROM manual_punches m
-            JOIN employees e ON m.employee_id = e.id
-            JOIN employees r ON m.requested_by = r.id
-            LEFT JOIN employees a ON m.authorized_by = a.id
-            ORDER BY m.requested_at DESC
-            LIMIT 50
-        ")->fetchAll();
+            $historyPunches = $pdo->query("
+                SELECT m.*, e.name as emp_name, e.calling_name, e.machine_user_id, e.department,
+                       r.name as requester_name, a.name as authorizer_name
+                FROM manual_punches m
+                JOIN employees e ON m.employee_id = e.id
+                JOIN employees r ON m.requested_by = r.id
+                LEFT JOIN employees a ON m.authorized_by = a.id
+                ORDER BY m.requested_at DESC
+                LIMIT 50
+            ")->fetchAll();
 
-        $staffList = $pdo->query("SELECT id, name, machine_user_id, department FROM employees WHERE status = 'active' ORDER BY machine_user_id ASC")->fetchAll();
+            $staffList = $pdo->query("SELECT id, name, machine_user_id, department FROM employees WHERE status = 'active' ORDER BY machine_user_id ASC")->fetchAll();
+        } else {
+            // Regular employees only view & submit their own Manual In/Out history
+            $histStmt = $pdo->prepare("
+                SELECT m.*, e.name as emp_name, e.calling_name, e.machine_user_id, e.department,
+                       r.name as requester_name, a.name as authorizer_name
+                FROM manual_punches m
+                JOIN employees e ON m.employee_id = e.id
+                JOIN employees r ON m.requested_by = r.id
+                LEFT JOIN employees a ON m.authorized_by = a.id
+                WHERE m.employee_id = ?
+                ORDER BY m.requested_at DESC
+                LIMIT 50
+            ");
+            $histStmt->execute([$user['id']]);
+            $historyPunches = $histStmt->fetchAll();
+            $staffList = [[
+                'id' => $user['id'],
+                'name' => $user['name'],
+                'machine_user_id' => $user['machine_user_id'],
+                'department' => $user['department'] ?? 'Sapphire'
+            ]];
+        }
     } catch (Exception $e) {
         $error = $e->getMessage();
     }
@@ -179,8 +203,8 @@ require_once __DIR__ . '/includes/sidebar.php';
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-            <h2 class="text-xl sm:text-2xl font-serif font-bold text-white">Manual In/Out & Audit History</h2>
-            <p class="text-xs text-slate-400 mt-1">Submit missed punches, authorize manual adjustments, and maintain full audit history</p>
+            <h2 class="text-xl sm:text-2xl font-serif font-bold text-white"><?= $isManagementView ? 'Manual In/Out & Audit History' : 'My Manual In/Out Requests' ?></h2>
+            <p class="text-xs text-slate-400 mt-1"><?= $isManagementView ? 'Submit missed punches, authorize manual adjustments, and maintain full audit history' : 'Submit missed fingerprint check-in/out requests and track management approval status' ?></p>
         </div>
         <button onclick="openPunchModal()" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-950 bg-amber-400 hover:bg-amber-300 shadow-lg shadow-amber-500/20 transition-all">
             <i class="fa-solid fa-clock-rotate-left"></i>
@@ -362,6 +386,7 @@ require_once __DIR__ . '/includes/sidebar.php';
             <input type="hidden" name="action" value="request">
 
             <!-- Employee -->
+            <?php if ($isManagementView): ?>
             <div>
                 <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
                     Employee *
@@ -374,6 +399,13 @@ require_once __DIR__ . '/includes/sidebar.php';
                     <?php endforeach; ?>
                 </select>
             </div>
+            <?php else: ?>
+                <input type="hidden" name="employee_id" value="<?= (int)$user['id'] ?>">
+                <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300 flex items-center justify-between">
+                    <span class="text-slate-400">Staff Member:</span>
+                    <span class="font-semibold text-white">#<?= htmlspecialchars($user['machine_user_id']) ?> &bull; <?= htmlspecialchars($user['name']) ?></span>
+                </div>
+            <?php endif; ?>
 
             <!-- Date -->
             <div>
