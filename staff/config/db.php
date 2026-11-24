@@ -50,8 +50,19 @@ try {
             $pdo->exec("ALTER TABLE employees ADD COLUMN custom_annual_quota DECIMAL(4,1) NULL DEFAULT 14.0 AFTER custom_leave_enabled");
             $pdo->exec("ALTER TABLE employees ADD COLUMN custom_casual_quota DECIMAL(4,1) NULL DEFAULT 7.0 AFTER custom_annual_quota");
             $pdo->exec("ALTER TABLE employees ADD COLUMN custom_monthly_quota DECIMAL(4,1) NULL DEFAULT 4.0 AFTER custom_casual_quota");
-            $pdo->exec("ALTER TABLE employees ADD COLUMN custom_medical_quota DECIMAL(4,1) NULL DEFAULT 14.0 AFTER custom_monthly_quota");
+            $pdo->exec("ALTER TABLE employees ADD COLUMN custom_medical_quota DECIMAL(4,1) NULL DEFAULT 7.0 AFTER custom_monthly_quota");
         }
+    } catch (Exception $ign) {}
+
+    // Auto-migrate Medical Leave default quota from 14 -> 7 days (for non-custom staff)
+    try {
+        $pdo->exec("ALTER TABLE leave_balances MODIFY COLUMN medical_total DECIMAL(4,1) NOT NULL DEFAULT 7.0");
+        $pdo->exec("
+            UPDATE leave_balances lb
+            JOIN employees e ON e.id = lb.employee_id
+            SET lb.medical_total = 7.0
+            WHERE lb.medical_total = 14.0 AND COALESCE(e.custom_leave_enabled, 0) = 0
+        ");
     } catch (Exception $ign) {}
 
     // Auto-migrate leaves table leave_type enum to include 'Monthly'

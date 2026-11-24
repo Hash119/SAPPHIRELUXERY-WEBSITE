@@ -10,7 +10,7 @@
  *    - Uses custom Annual, Casual, Monthly & Medical quotas configured by Admin in Employee Directory.
  *
  * 3. Confirmed Permanent Staff (`employment_type = 'confirmed'`):
- *    - 14 Annual Leaves + 7 Casual Leaves + 4 Monthly Leaves per month + 14 Medical Leaves.
+ *    - 14 Annual Leaves + 7 Casual Leaves + 4 Monthly Leaves per month + 7 Medical Leaves.
  *    - Any annual leaves already taken earlier in the same calendar year remain deducted from the 14-day total.
  *
  * 4. Probation Staff (`employment_type = 'probation'`):
@@ -62,7 +62,7 @@ if (!function_exists('calculate_employee_annual_leave_accrual')) {
             $cAnnual  = isset($emp['custom_annual_quota'])  && $emp['custom_annual_quota']  !== '' ? (float)$emp['custom_annual_quota']  : 14.0;
             $cCasual  = isset($emp['custom_casual_quota'])  && $emp['custom_casual_quota']  !== '' ? (float)$emp['custom_casual_quota']  : 7.0;
             $cMonthly = isset($emp['custom_monthly_quota']) && $emp['custom_monthly_quota'] !== '' ? (float)$emp['custom_monthly_quota'] : 4.0;
-            $cMedical = isset($emp['custom_medical_quota']) && $emp['custom_medical_quota'] !== '' ? (float)$emp['custom_medical_quota'] : 14.0;
+            $cMedical = isset($emp['custom_medical_quota']) && $emp['custom_medical_quota'] !== '' ? (float)$emp['custom_medical_quota'] : 7.0;
 
             return [
                 'stage'            => 'custom_override',
@@ -86,7 +86,7 @@ if (!function_exists('calculate_employee_annual_leave_accrual')) {
                 'annual_total'     => 14.0,
                 'casual_total'     => 7.0,
                 'monthly_quota'    => 4.0,
-                'medical_total'    => 14.0,
+                'medical_total'    => 7.0,
                 'is_accruing'      => false,
                 'accrued_months'   => 12,
                 'appointment_date' => $appointmentDate,
@@ -103,7 +103,7 @@ if (!function_exists('calculate_employee_annual_leave_accrual')) {
                 'annual_total'     => 0.0,
                 'casual_total'     => 0.0,
                 'monthly_quota'    => 4.0,
-                'medical_total'    => 14.0,
+                'medical_total'    => 7.0,
                 'is_accruing'      => false,
                 'accrued_months'   => 0,
                 'appointment_date' => $appointmentDate,
@@ -123,7 +123,7 @@ if (!function_exists('calculate_employee_annual_leave_accrual')) {
                     'annual_total'     => 14.0,
                     'casual_total'     => 7.0,
                     'monthly_quota'    => 4.0,
-                    'medical_total'    => 14.0,
+                    'medical_total'    => 7.0,
                     'is_accruing'      => false,
                     'accrued_months'   => 12,
                     'appointment_date' => $appointmentDate,
@@ -140,7 +140,7 @@ if (!function_exists('calculate_employee_annual_leave_accrual')) {
                     'annual_total'     => $accruedAnnual,
                     'casual_total'     => 0.0,
                     'monthly_quota'    => 4.0,
-                    'medical_total'    => 14.0,
+                    'medical_total'    => 7.0,
                     'is_accruing'      => true,
                     'accrued_months'   => $accruedMonths,
                     'appointment_date' => $appointmentDate,
@@ -157,7 +157,7 @@ if (!function_exists('calculate_employee_annual_leave_accrual')) {
             'annual_total'     => 14.0,
             'casual_total'     => 7.0,
             'monthly_quota'    => 4.0,
-            'medical_total'    => 14.0,
+            'medical_total'    => 7.0,
             'is_accruing'      => false,
             'accrued_months'   => 12,
             'appointment_date' => $appointmentDate,
@@ -189,7 +189,7 @@ if (!function_exists('calculate_employee_annual_leave_accrual')) {
             $curBal = $bStmt->fetch();
 
             $matTotal = (($emp['gender'] ?? '') === 'Female' && !empty($emp['maternity_eligible'])) ? 84.0 : 0.0;
-            $medTotal = (float)($ent['medical_total'] ?? 14.0);
+            $medTotal = (float)($ent['medical_total'] ?? 7.0);
 
             if ($curBal) {
                 $uStmt = $pdo->prepare("

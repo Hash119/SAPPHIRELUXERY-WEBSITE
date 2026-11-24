@@ -161,7 +161,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
         $customAnnualQuota  = ($customLeaveEnabled && $_POST['custom_annual_quota']  !== '') ? max(0, (float)$_POST['custom_annual_quota'])  : 14.0;
         $customCasualQuota  = ($customLeaveEnabled && $_POST['custom_casual_quota']  !== '') ? max(0, (float)$_POST['custom_casual_quota'])  : 7.0;
         $customMonthlyQuota = ($customLeaveEnabled && $_POST['custom_monthly_quota'] !== '') ? max(0, (float)$_POST['custom_monthly_quota']) : 4.0;
-        $customMedicalQuota = ($customLeaveEnabled && $_POST['custom_medical_quota'] !== '') ? max(0, (float)$_POST['custom_medical_quota']) : 14.0;
+        $customMedicalQuota = ($customLeaveEnabled && $_POST['custom_medical_quota'] !== '') ? max(0, (float)$_POST['custom_medical_quota']) : 7.0;
 
         $canApproveLeave = isset($_POST['can_approve_leave']) ? 1 : 0;
         $canApprovePunch = isset($_POST['can_approve_manual_punch']) ? 1 : 0;
@@ -277,7 +277,7 @@ if (isset($pdo)) {
                      COALESCE(lb.annual_used, 0.0)   AS bal_annual_used,
                      COALESCE(lb.casual_total, 7.0)  AS bal_casual_total,
                      COALESCE(lb.casual_used, 0.0)   AS bal_casual_used,
-                     COALESCE(lb.medical_total, 14.0) AS bal_medical_total,
+                     COALESCE(lb.medical_total, 7.0) AS bal_medical_total,
                      COALESCE(lb.medical_used, 0.0)  AS bal_medical_used
               FROM employees e
               LEFT JOIN leave_balances lb ON lb.employee_id = e.id AND lb.year = {$curYr}";
@@ -784,7 +784,7 @@ require_once __DIR__ . '/includes/sidebar.php';
                         </div>
                         <div>
                             <label class="block text-[10px] font-semibold uppercase tracking-wider text-indigo-300 mb-1">Medical / Yr</label>
-                            <input type="number" step="0.5" min="0" max="60" name="custom_medical_quota" id="f_custom_medical" value="14"
+                            <input type="number" step="0.5" min="0" max="60" name="custom_medical_quota" id="f_custom_medical" value="7"
                                 class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-white font-mono focus:border-indigo-400 focus:outline-none">
                         </div>
                     </div>
@@ -985,7 +985,7 @@ require_once __DIR__ . '/includes/sidebar.php';
             document.getElementById('f_custom_annual').value = '14';
             document.getElementById('f_custom_casual').value = '7';
             document.getElementById('f_custom_monthly').value = '4';
-            document.getElementById('f_custom_medical').value = '14';
+            document.getElementById('f_custom_medical').value = '7';
             handleCustomLeaveToggle();
         }
         const adjBox = document.getElementById('adjustUsedBox');
@@ -1056,7 +1056,7 @@ require_once __DIR__ . '/includes/sidebar.php';
             document.getElementById('f_custom_annual').value = emp.custom_annual_quota ?? emp.bal_annual_total ?? 14;
             document.getElementById('f_custom_casual').value = emp.custom_casual_quota ?? emp.bal_casual_total ?? 7;
             document.getElementById('f_custom_monthly').value = emp.custom_monthly_quota ?? 4;
-            document.getElementById('f_custom_medical').value = emp.custom_medical_quota ?? emp.bal_medical_total ?? 14;
+            document.getElementById('f_custom_medical').value = emp.custom_medical_quota ?? emp.bal_medical_total ?? 7;
             handleCustomLeaveToggle();
         }
         const adjBox = document.getElementById('adjustUsedBox');

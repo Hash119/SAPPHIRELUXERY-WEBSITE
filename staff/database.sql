@@ -52,7 +52,7 @@ CREATE TABLE `employees` (
   `custom_annual_quota` DECIMAL(4,1) NULL DEFAULT 14.0,
   `custom_casual_quota` DECIMAL(4,1) NULL DEFAULT 7.0,
   `custom_monthly_quota` DECIMAL(4,1) NULL DEFAULT 4.0,
-  `custom_medical_quota` DECIMAL(4,1) NULL DEFAULT 14.0,
+  `custom_medical_quota` DECIMAL(4,1) NULL DEFAULT 7.0,
   `shift_start` TIME NOT NULL DEFAULT '09:00:00',
   `shift_end` TIME NOT NULL DEFAULT '18:00:00',
   `grace_period_mins` INT NOT NULL DEFAULT 15,
@@ -118,7 +118,7 @@ CREATE TABLE `leave_balances` (
   `casual_used` DECIMAL(4,1) NOT NULL DEFAULT 0.0,
   `monthly_quota` DECIMAL(4,1) NOT NULL DEFAULT 4.0 COMMENT 'Allowed monthly leaves per month (default 4)',
   `monthly_used` DECIMAL(4,1) NOT NULL DEFAULT 0.0,
-  `medical_total` DECIMAL(4,1) NOT NULL DEFAULT 14.0,
+  `medical_total` DECIMAL(4,1) NOT NULL DEFAULT 7.0,
   `medical_used` DECIMAL(4,1) NOT NULL DEFAULT 0.0,
   `maternity_total` DECIMAL(4,1) NOT NULL DEFAULT 84.0,
   `maternity_used` DECIMAL(4,1) NOT NULL DEFAULT 0.0,
@@ -202,7 +202,7 @@ SELECT `id`, 2026,
   (CASE WHEN `employment_type` = 'probation' THEN 0.0 ELSE 14.0 END),
   (CASE WHEN `employment_type` = 'probation' THEN 0.0 ELSE 7.0 END),
   4.0,
-  14.0, 
+  7.0, 
   (CASE WHEN `maternity_eligible` = 1 THEN 84.0 ELSE 0.0 END)
 FROM `employees`;
 

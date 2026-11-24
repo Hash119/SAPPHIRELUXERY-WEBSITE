@@ -24,12 +24,33 @@ if (isset($pdo)) {
 $isFemale = ($emp['gender'] === 'Female');
 $isMaternityEligible = ($emp['maternity_eligible'] == 1 && $isFemale);
 
-// Selected Month for Attendance
-$selectedMonth = $_GET['month'] ?? date('Y-m');
-$year = (int)date('Y', strtotime($selectedMonth . '-01'));
-$monthNum = (int)date('m', strtotime($selectedMonth . '-01'));
-$startDate = date('Y-m-01', strtotime($selectedMonth . '-01'));
-$endDate = date('Y-m-t', strtotime($selectedMonth . '-01'));
+// Selected Date Range for Attendance (Default: 1st of current month to today)
+$defaultFrom = date('Y-m-01');
+$defaultTo   = date('Y-m-d');
+
+if (!empty($_GET['from_date']) || !empty($_GET['to_date'])) {
+    $startDate = !empty($_GET['from_date']) ? $_GET['from_date'] : $defaultFrom;
+    $endDate   = !empty($_GET['to_date']) ? $_GET['to_date'] : $defaultTo;
+} elseif (!empty($_GET['month'])) {
+    // Backward compatibility if ?month=YYYY-MM is passed
+    $mTs = strtotime($_GET['month'] . '-01');
+    $startDate = date('Y-m-01', $mTs);
+    $endDate   = (date('Y-m', $mTs) === date('Y-m')) ? $defaultTo : date('Y-m-t', $mTs);
+} else {
+    $startDate = $defaultFrom;
+    $endDate   = $defaultTo;
+}
+
+// Ensure startDate <= endDate
+if (strtotime($startDate) > strtotime($endDate)) {
+    $tmpDate = $startDate;
+    $startDate = $endDate;
+    $endDate = $tmpDate;
+}
+
+$selectedMonth = date('Y-m', strtotime($endDate));
+$year = (int)date('Y', strtotime($endDate));
+$monthNum = (int)date('m', strtotime($endDate));
 
 // Handle Leave Application
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
@@ -114,7 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
 $balance = [
     'annual_total' => 14.0, 'annual_used' => 0.0,
     'casual_total' => 7.0, 'casual_used' => 0.0,
-    'medical_total' => 14.0, 'medical_used' => 0.0,
+    'medical_total' => 7.0, 'medical_used' => 0.0,
     'maternity_total' => $isMaternityEligible ? 84.0 : 0.0, 'maternity_used' => 0.0
 ];
 
@@ -352,7 +373,7 @@ require_once __DIR__ . '/includes/sidebar.php';
             <div class="mt-2.5">
                 <span class="text-xl sm:text-2xl font-bold text-white"><?= $presentDays ?></span>
                 <span class="text-xs text-slate-400 ml-1">Days</span>
-                <p class="text-[10px] text-slate-400 mt-0.5"><?= date('M Y', strtotime($selectedMonth . '-01')) ?></p>
+                <p class="text-[10px] text-slate-400 mt-0.5"><?= date('d M', strtotime($startDate)) ?> &ndash; <?= date('d M Y', strtotime($endDate)) ?></p>
             </div>
         </div>
 
@@ -484,11 +505,12 @@ require_once __DIR__ . '/includes/sidebar.php';
             <!-- 4. Medical Leave -->
             <div class="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
                 <span class="text-xs text-slate-400 block">Medical Leave</span>
+                <?php $medRemDisp = max(0, (float)$balance['medical_total'] - (float)$balance['medical_used']); ?>
                 <div class="mt-1 flex items-baseline justify-between">
-                    <span class="text-lg font-bold text-white"><?= $balance['medical_total'] - $balance['medical_used'] ?></span>
-                    <span class="text-[11px] text-slate-500">of <?= $balance['medical_total'] ?></span>
+                    <span class="text-lg font-bold text-white"><?= rtrim(rtrim(number_format($medRemDisp, 1), '0'), '.') ?></span>
+                    <span class="text-[11px] text-slate-500">of <?= rtrim(rtrim(number_format((float)$balance['medical_total'], 1), '0'), '.') ?></span>
                 </div>
-                <p class="text-[10px] text-slate-400 mt-0.5">Used: <?= $balance['medical_used'] ?> days</p>
+                <p class="text-[10px] text-slate-400 mt-0.5">Used: <?= rtrim(rtrim(number_format((float)$balance['medical_used'], 1), '0'), '.') ?> days</p>
             </div>
 
             <!-- 5. Maternity / Short Leave -->
@@ -514,18 +536,37 @@ require_once __DIR__ . '/includes/sidebar.php';
         </div>
     </div>
 
-    <!-- MY ATTENDANCE LOG FOR THE MONTH -->
+    <!-- MY ATTENDANCE LOG (DATE RANGE) -->
     <div class="bg-slate-900/70 border border-slate-800/80 rounded-2xl overflow-hidden shadow-xl">
-        <div class="p-5 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="p-5 border-b border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
                 <h3 class="font-serif font-bold text-base text-white">My Attendance Log</h3>
-                <p class="text-xs text-slate-400 mt-0.5">Machine check-in, check-out, and daily late/OT details</p>
+                <p class="text-xs text-slate-400 mt-0.5">
+                    Showing <span class="text-gold-400 font-mono font-semibold"><?= date('d M Y', strtotime($startDate)) ?></span> to <span class="text-gold-400 font-mono font-semibold"><?= date('d M Y', strtotime($endDate)) ?></span> &bull; Machine check-in, check-out &amp; late/OT details
+                </p>
             </div>
 
-            <!-- Month selector -->
-            <form method="GET" action="employee_portal.php" class="flex items-center gap-2">
-                <input type="month" name="month" value="<?= htmlspecialchars($selectedMonth) ?>" onchange="this.form.submit()"
-                    class="px-3 py-1.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 font-mono focus:border-gold-500 focus:outline-none">
+            <!-- Date From - To Selector (Default: 1st of month -> Today) -->
+            <form method="GET" action="employee_portal.php" class="flex flex-wrap items-center gap-2">
+                <div class="flex items-center gap-1.5">
+                    <label for="att_from_date" class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">From</label>
+                    <input type="date" id="att_from_date" name="from_date" value="<?= htmlspecialchars($startDate) ?>"
+                        class="px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 font-mono focus:border-gold-500 focus:outline-none">
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <label for="att_to_date" class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">To</label>
+                    <input type="date" id="att_to_date" name="to_date" value="<?= htmlspecialchars($endDate) ?>"
+                        class="px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 font-mono focus:border-gold-500 focus:outline-none">
+                </div>
+                <button type="submit" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-950 bg-gold-400 hover:bg-gold-500 transition-colors flex items-center gap-1.5">
+                    <i class="fa-solid fa-magnifying-glass text-[10px]"></i>
+                    <span>Search</span>
+                </button>
+                <?php if ($startDate !== $defaultFrom || $endDate !== $defaultTo): ?>
+                    <a href="employee_portal.php" class="px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-colors" title="Reset to 1st of month to Today">
+                        Reset
+                    </a>
+                <?php endif; ?>
             </form>
         </div>
 
@@ -545,7 +586,7 @@ require_once __DIR__ . '/includes/sidebar.php';
                 </thead>
                 <tbody class="divide-y divide-slate-800/60 font-mono text-[11px]">
                     <?php if (empty($myAttendance)): ?>
-                        <tr><td colspan="8" class="text-center py-8 text-slate-500 font-sans">No attendance records found for <?= date('F Y', strtotime($selectedMonth . '-01')) ?>.</td></tr>
+                        <tr><td colspan="8" class="text-center py-8 text-slate-500 font-sans">No attendance records found for <?= date('d M Y', strtotime($startDate)) ?> to <?= date('d M Y', strtotime($endDate)) ?>.</td></tr>
                     <?php else: ?>
                         <?php foreach ($myAttendance as $log): 
                             $hasIn = !empty($log['check_in']) && $log['check_in'] !== '00:00:00';
@@ -747,7 +788,8 @@ require_once __DIR__ . '/includes/sidebar.php';
                     <?php else: ?>
                         <option value="Annual" disabled class="text-slate-600">Annual Leave – Not yet eligible (Joining Year)</option>
                     <?php endif; ?>
-                    <option value="Medical">Medical / Sick Leave (<?= $balance['medical_total'] - $balance['medical_used'] ?> remaining)</option>
+                    <?php $medRemOpt = max(0, (float)$balance['medical_total'] - (float)$balance['medical_used']); ?>
+                    <option value="Medical">Medical / Sick Leave (<?= rtrim(rtrim(number_format($medRemOpt, 1), '0'), '.') ?> remaining of <?= rtrim(rtrim(number_format((float)$balance['medical_total'], 1), '0'), '.') ?>)</option>
                     <?php if ($isMaternityEligible): ?>
                         <option value="Maternity" class="text-purple-300 font-semibold">
                             Maternity Leave (<?= $balance['maternity_total'] - $balance['maternity_used'] ?> days quota)
