@@ -193,7 +193,7 @@ if (isset($_GET['export']) && $_GET['export'] === 'staff_csv') {
     header('Content-Type: text/csv; charset=utf-8');
     header('Content-Disposition: attachment; filename=Sapphire_Staff_Directory_' . date('Y-m-d') . '.csv');
     $output = fopen('php://output', 'w');
-    fputcsv($output, ['Machine ID', 'Emp Code', 'Full Name', 'Calling Name', 'Department', 'Designation', 'Gender', 'Contact Phone', 'Shift Start', 'Shift End', 'Status', 'Maternity Eligible', 'Can Approve Leaves', 'Join Date']);
+    fputcsv($output, ['Machine ID', 'Emp Code', 'Full Name', 'Calling Name', 'Email', 'Department', 'Designation', 'Gender', 'Contact Phone', 'Shift Start', 'Shift End', 'Status', 'Maternity Eligible', 'Can Approve Leaves', 'Join Date', 'Date of Appointment']);
     
     $stSql = "SELECT * FROM employees WHERE 1=1";
     $p = [];
@@ -205,10 +205,10 @@ if (isset($_GET['export']) && $_GET['export'] === 'staff_csv') {
     $stmt->execute($p);
     while ($r = $stmt->fetch()) {
         fputcsv($output, [
-            $r['machine_user_id'], $r['emp_no'], $r['name'], $r['calling_name'], $r['department'],
+            $r['machine_user_id'], $r['emp_no'], $r['name'], $r['calling_name'], $r['email'] ?? '', $r['department'],
             $r['designation'], $r['gender'], $r['phone'], $r['shift_start'], $r['shift_end'],
             ucfirst($r['status']), $r['maternity_eligible'] ? 'Active (84 Days)' : 'No',
-            $r['can_approve_leave'] ? 'Yes' : 'No', $r['join_date']
+            $r['can_approve_leave'] ? 'Yes' : 'No', $r['join_date'], $r['appointment_date'] ?? ''
         ]);
     }
     fclose($output);
@@ -843,11 +843,12 @@ require_once __DIR__ . '/includes/sidebar.php';
                             <th class="py-3 px-3">Maternity Permission</th>
                             <th class="py-3 px-3">Leave Approver</th>
                             <th class="py-3 px-3">Join Date</th>
+                            <th class="py-3 px-3">Appointment Date</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-800/60 font-mono text-[11px]">
                         <?php if (empty($staffList)): ?>
-                            <tr><td colspan="11" class="text-center py-8 text-slate-500 font-sans">No staff records match the selected filter.</td></tr>
+                            <tr><td colspan="12" class="text-center py-8 text-slate-500 font-sans">No staff records match the selected filter.</td></tr>
                         <?php else: ?>
                             <?php foreach ($staffList as $st): ?>
                                 <tr class="hover:bg-slate-800/30 transition-colors <?= $st['status'] === 'inactive' ? 'opacity-60 bg-slate-950/30' : '' ?>">
@@ -890,6 +891,7 @@ require_once __DIR__ . '/includes/sidebar.php';
                                         <?= ($st['can_approve_leave'] || $st['role'] === 'admin') ? '<span class="text-emerald-400"><i class="fa-solid fa-check"></i> Yes</span>' : 'No' ?>
                                     </td>
                                     <td class="py-3 px-3 text-slate-400"><?= $st['join_date'] ?></td>
+                                    <td class="py-3 px-3 text-gold-400"><?= !empty($st['appointment_date']) ? htmlspecialchars($st['appointment_date']) : '-' ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php endif; ?>

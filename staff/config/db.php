@@ -29,7 +29,7 @@ try {
         }
     } catch (Exception $ign) {}
 
-    // Auto-migrate employment_type (confirmed / probation)
+    // Auto-migrate employment_type (confirmed / probation), appointment_date & custom leave overrides
     try {
         $cols = $pdo->query("SHOW COLUMNS FROM employees LIKE 'employment_type'")->fetchAll();
         if (empty($cols)) {
@@ -39,6 +39,18 @@ try {
         if (empty($colsProb)) {
             $pdo->exec("ALTER TABLE employees ADD COLUMN probation_months INT NOT NULL DEFAULT 6 AFTER employment_type");
             $pdo->exec("ALTER TABLE employees ADD COLUMN probation_end_date DATE NULL AFTER probation_months");
+        }
+        $colsApp = $pdo->query("SHOW COLUMNS FROM employees LIKE 'appointment_date'")->fetchAll();
+        if (empty($colsApp)) {
+            $pdo->exec("ALTER TABLE employees ADD COLUMN appointment_date DATE NULL AFTER join_date");
+        }
+        $colsCust = $pdo->query("SHOW COLUMNS FROM employees LIKE 'custom_leave_enabled'")->fetchAll();
+        if (empty($colsCust)) {
+            $pdo->exec("ALTER TABLE employees ADD COLUMN custom_leave_enabled TINYINT(1) NOT NULL DEFAULT 0 AFTER appointment_date");
+            $pdo->exec("ALTER TABLE employees ADD COLUMN custom_annual_quota DECIMAL(4,1) NULL DEFAULT 14.0 AFTER custom_leave_enabled");
+            $pdo->exec("ALTER TABLE employees ADD COLUMN custom_casual_quota DECIMAL(4,1) NULL DEFAULT 7.0 AFTER custom_annual_quota");
+            $pdo->exec("ALTER TABLE employees ADD COLUMN custom_monthly_quota DECIMAL(4,1) NULL DEFAULT 4.0 AFTER custom_casual_quota");
+            $pdo->exec("ALTER TABLE employees ADD COLUMN custom_medical_quota DECIMAL(4,1) NULL DEFAULT 14.0 AFTER custom_monthly_quota");
         }
     } catch (Exception $ign) {}
 

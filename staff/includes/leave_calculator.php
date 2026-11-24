@@ -4,21 +4,24 @@
  *
  * Rules:
  * 1. Working Days: All 7 days a week (including Sundays & Poya Days) are open working days.
- *    No automatic off days. Staff take their scheduled offs using their 4 Monthly Leaves per month.
+ *    No automatic off days. Staff take their scheduled offs using their Monthly Leaves per month.
  *
- * 2. Confirmed Permanent Staff (`employment_type = 'confirmed'`):
- *    - 14 Annual Leaves + 7 Casual Leaves + 4 Monthly Leaves per month.
+ * 2. Admin Custom Leave Override (`custom_leave_enabled = 1`):
+ *    - Uses custom Annual, Casual, Monthly & Medical quotas configured by Admin in Employee Directory.
+ *
+ * 3. Confirmed Permanent Staff (`employment_type = 'confirmed'`):
+ *    - 14 Annual Leaves + 7 Casual Leaves + 4 Monthly Leaves per month + 14 Medical Leaves.
  *    - Any annual leaves already taken earlier in the same calendar year remain deducted from the 14-day total.
  *
- * 3. Probation Staff (`employment_type = 'probation'`):
+ * 4. Probation Staff (`employment_type = 'probation'`):
  *    a) Joining Calendar Year (e.g., joined Oct 2025, viewing Oct-Dec 2025):
  *       - 4 Monthly Leaves per month ONLY. Annual = 0, Casual = 0.
- *    b) Calendar Year Following Joining (Accrual Phase leading to 1-Year Appointment Date):
+ *    b) Calendar Year Following Joining (Accrual Phase leading to Date of Appointment):
  *       - Starting January, accrues 0.5 day (Half Day) of Annual Leave per month
  *         (Jan = 0.5d, Feb = 1.0d, Mar = 1.5d ... up to appointment month, e.g., Oct = 5.0d).
  *       - Unspent half-days accumulate (e.g., Jan 0.5 + Feb 0.5 = 1.0 full day in Feb).
  *       - Casual Leave = 0 until post-appointment unlock.
- *    c) Post 1-Year Appointment Date (From 1st of month AFTER appointment month, e.g., Nov 1 for Oct joiner):
+ *    c) Post Date of Appointment (From 1st of month AFTER appointment month, e.g., Nov 1 for Oct appointment):
  *       - Full leave entitlement activates: 14 Annual + 7 Casual + 4 Monthly Leaves.
  *       - Any accrued annual leaves already used earlier in that year remain in `annual_used`,
  *         so remaining balance = 14.0 - annual_used (e.g., 2 days used -> 12 days remaining).
@@ -35,18 +38,46 @@ if (!function_exists('calculate_employee_annual_leave_accrual')) {
         $joinT = strtotime($joinDate);
         $joinYear = (int)date('Y', $joinT);
 
-        // 1-Year Appointment Anniversary Date
-        $appointmentT = strtotime('+1 year', $joinT);
-        $appointmentDate = date('Y-m-d', $appointmentT);
+        // Use explicit Date of Appointment if set by Admin; otherwise default to Join Date + 1 Year
+        if (!empty($emp['appointment_date']) && $emp['appointment_date'] !== '0000-00-00') {
+            $appointmentDate = $emp['appointment_date'];
+            $appointmentT = strtotime($appointmentDate);
+        } else {
+            $appointmentT = strtotime('+1 year', $joinT);
+            $appointmentDate = date('Y-m-d', $appointmentT);
+        }
+
         $appointmentYear = (int)date('Y', $appointmentT);
         $appointmentMonth = (int)date('m', $appointmentT);
 
-        // Full unlock begins on the 1st of the month AFTER the 1-year appointment month
-        // (e.g., Joined Oct 2025 -> Appointment Oct 2026 -> Unlocks Nov 1, 2026)
-        // (e.g., Joined Dec 2025 -> Appointment Dec 2026 -> Unlocks Jan 1, 2027)
+        // Full unlock begins on the 1st of the month AFTER the appointment month
+        // (e.g., Appointment Oct 2026 -> Unlocks Nov 1, 2026)
+        // (e.g., Appointment Dec 2026 -> Unlocks Jan 1, 2027)
         $unlockTs = mktime(0, 0, 0, $appointmentMonth + 1, 1, $appointmentYear);
         $unlockDateStr = date('M 1, Y', $unlockTs);
         $unlockShortStr = date('M 1', $unlockTs);
+
+        // CASE 0: Admin Custom Leave Override
+        if (!empty($emp['custom_leave_enabled']) && (int)$emp['custom_leave_enabled'] === 1) {
+            $cAnnual  = isset($emp['custom_annual_quota'])  && $emp['custom_annual_quota']  !== '' ? (float)$emp['custom_annual_quota']  : 14.0;
+            $cCasual  = isset($emp['custom_casual_quota'])  && $emp['custom_casual_quota']  !== '' ? (float)$emp['custom_casual_quota']  : 7.0;
+            $cMonthly = isset($emp['custom_monthly_quota']) && $emp['custom_monthly_quota'] !== '' ? (float)$emp['custom_monthly_quota'] : 4.0;
+            $cMedical = isset($emp['custom_medical_quota']) && $emp['custom_medical_quota'] !== '' ? (float)$emp['custom_medical_quota'] : 14.0;
+
+            return [
+                'stage'            => 'custom_override',
+                'annual_total'     => $cAnnual,
+                'casual_total'     => $cCasual,
+                'monthly_quota'    => $cMonthly,
+                'medical_total'    => $cMedical,
+                'is_accruing'      => false,
+                'accrued_months'   => 12,
+                'appointment_date' => $appointmentDate,
+                'unlock_date'      => $unlockDateStr,
+                'badge'            => 'Custom Leave Quota (Admin)',
+                'description'      => "Custom Admin Quota: {$cAnnual} Annual, {$cCasual} Casual, {$cMonthly} Monthly/mo, {$cMedical} Medical."
+            ];
+        }
 
         // CASE A: Confirmed Permanent Staff (already confirmed by management)
         if ($empType === 'confirmed') {
@@ -55,6 +86,7 @@ if (!function_exists('calculate_employee_annual_leave_accrual')) {
                 'annual_total'     => 14.0,
                 'casual_total'     => 7.0,
                 'monthly_quota'    => 4.0,
+                'medical_total'    => 14.0,
                 'is_accruing'      => false,
                 'accrued_months'   => 12,
                 'appointment_date' => $appointmentDate,
@@ -65,13 +97,13 @@ if (!function_exists('calculate_employee_annual_leave_accrual')) {
         }
 
         // CASE B: Probation — Viewing a year before or equal to Joining Calendar Year ($joinYear >= $year)
-        // Only 4 Monthly Leaves per month. Half-day annual accrual starts January of next year.
         if ($joinYear >= $year) {
             return [
                 'stage'            => 'probation_joining_year',
                 'annual_total'     => 0.0,
                 'casual_total'     => 0.0,
                 'monthly_quota'    => 4.0,
+                'medical_total'    => 14.0,
                 'is_accruing'      => false,
                 'accrued_months'   => 0,
                 'appointment_date' => $appointmentDate,
@@ -81,28 +113,25 @@ if (!function_exists('calculate_employee_annual_leave_accrual')) {
             ];
         }
 
-        // CASE C: Probation — Calendar Year containing their 1-Year Appointment Date ($appointmentYear == $year)
+        // CASE C: Probation — Calendar Year containing their Date of Appointment ($appointmentYear == $year)
         if ($appointmentYear == $year) {
-            $unlockMonth = $appointmentMonth + 1; // 13 for December joiners -> unlocks Jan 1 next year
+            $unlockMonth = $appointmentMonth + 1;
 
             if ($month >= $unlockMonth) {
-                // Post-Appointment (e.g., Nov 1 onwards for Oct joiner):
-                // Full 14 Annual + 7 Casual unlock; earlier accrued leaves used remain deducted from 14.0
                 return [
                     'stage'            => 'confirmed_post_appointment',
                     'annual_total'     => 14.0,
                     'casual_total'     => 7.0,
                     'monthly_quota'    => 4.0,
+                    'medical_total'    => 14.0,
                     'is_accruing'      => false,
                     'accrued_months'   => 12,
                     'appointment_date' => $appointmentDate,
                     'unlock_date'      => $unlockDateStr,
-                    'badge'            => '1-Yr Milestone Reached (Full Quota)',
+                    'badge'            => 'Appointment Milestone Reached (Full Quota)',
                     'description'      => "Full 14 Annual & 7 Casual leaves unlocked from {$unlockShortStr} (balanced against any accrued Annual leaves already taken)."
                 ];
             } else {
-                // Pre-Appointment (Jan up to appointment month):
-                // Accrue 0.5 day per month (Jan=0.5, Feb=1.0, Mar=1.5 ... Oct=5.0)
                 $accruedMonths = max(1, min($month, $appointmentMonth));
                 $accruedAnnual = round($accruedMonths * 0.5, 1);
 
@@ -111,6 +140,7 @@ if (!function_exists('calculate_employee_annual_leave_accrual')) {
                     'annual_total'     => $accruedAnnual,
                     'casual_total'     => 0.0,
                     'monthly_quota'    => 4.0,
+                    'medical_total'    => 14.0,
                     'is_accruing'      => true,
                     'accrued_months'   => $accruedMonths,
                     'appointment_date' => $appointmentDate,
@@ -121,26 +151,25 @@ if (!function_exists('calculate_employee_annual_leave_accrual')) {
             }
         }
 
-        // CASE D: Past 1-Year Appointment Year ($appointmentYear < $year)
+        // CASE D: Past Appointment Year ($appointmentYear < $year)
         return [
             'stage'            => 'confirmed_post_appointment',
             'annual_total'     => 14.0,
             'casual_total'     => 7.0,
             'monthly_quota'    => 4.0,
+            'medical_total'    => 14.0,
             'is_accruing'      => false,
             'accrued_months'   => 12,
             'appointment_date' => $appointmentDate,
             'unlock_date'      => $unlockDateStr,
-            'badge'            => 'Confirmed (Past 1-Yr Milestone)',
+            'badge'            => 'Confirmed (Past Appointment Date)',
             'description'      => 'Full 14 Annual + 7 Casual + 4 Monthly Leaves per month.'
         ];
     }
 
     /**
-     * Sync leave balances in database for an employee based on dynamic rules.
-     * Preserves annual_used, casual_used, medical_used, maternity_used, monthly_used
-     * so any accrued leaves taken earlier in the year are automatically deducted
-     * when the full 14-day Annual quota unlocks after the 1-year appointment date.
+     * Sync leave balances in database for an employee based on dynamic rules or admin custom override.
+     * Preserves annual_used, casual_used, medical_used, maternity_used, monthly_used.
      */
     function sync_employee_leave_balances($pdo, $empId, $year = null, $month = null) {
         if (!isset($pdo) || !$empId) return null;
@@ -160,24 +189,24 @@ if (!function_exists('calculate_employee_annual_leave_accrual')) {
             $curBal = $bStmt->fetch();
 
             $matTotal = (($emp['gender'] ?? '') === 'Female' && !empty($emp['maternity_eligible'])) ? 84.0 : 0.0;
+            $medTotal = (float)($ent['medical_total'] ?? 14.0);
 
             if ($curBal) {
-                // Update quotas while preserving *_used columns (so earlier accrued leaves stay deducted!)
                 $uStmt = $pdo->prepare("
                     UPDATE leave_balances
-                    SET annual_total = ?, casual_total = ?, monthly_quota = ?, maternity_total = ?
+                    SET annual_total = ?, casual_total = ?, monthly_quota = ?, medical_total = ?, maternity_total = ?
                     WHERE employee_id = ? AND year = ?
                 ");
                 $uStmt->execute([
                     $ent['annual_total'],
                     $ent['casual_total'],
                     $ent['monthly_quota'],
+                    $medTotal,
                     $matTotal,
                     $empId,
                     $year
                 ]);
             } else {
-                // Create row, also calculating any already-approved leaves in that year so used counts never start out-of-sync
                 $usedStmt = $pdo->prepare("
                     SELECT leave_type, COALESCE(SUM(total_days), 0) AS used_days
                     FROM leaves
@@ -193,7 +222,7 @@ if (!function_exists('calculate_employee_annual_leave_accrual')) {
                 $iStmt = $pdo->prepare("
                     INSERT INTO leave_balances
                     (employee_id, year, annual_total, annual_used, casual_total, casual_used, monthly_quota, monthly_used, medical_total, medical_used, maternity_total, maternity_used)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 14.0, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ");
                 $iStmt->execute([
                     $empId,
@@ -204,6 +233,7 @@ if (!function_exists('calculate_employee_annual_leave_accrual')) {
                     $usedMap['Casual'] ?? 0.0,
                     $ent['monthly_quota'],
                     $usedMap['Monthly'] ?? 0.0,
+                    $medTotal,
                     $usedMap['Medical'] ?? 0.0,
                     $matTotal,
                     $usedMap['Maternity'] ?? 0.0

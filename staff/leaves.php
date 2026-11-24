@@ -170,11 +170,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
 
             if ($type === 'Monthly') {
                 $monthStr = date('Y-m', $startT);
+                $monthlyQuotaLimit = isset($accrual['monthly_quota']) ? (float)$accrual['monthly_quota'] : 4.0;
                 $mlStmt = $pdo->prepare("SELECT COALESCE(SUM(total_days), 0) FROM leaves WHERE employee_id = ? AND leave_type = 'Monthly' AND status != 'Rejected' AND DATE_FORMAT(start_date, '%Y-%m') = ?");
                 $mlStmt->execute([$empId, $monthStr]);
                 $usedInMonth = (float)$mlStmt->fetchColumn();
-                if ($usedInMonth + $days > 4) {
-                    $reason .= " [Note: Exceeds 4 monthly leaves quota: " . ($usedInMonth + $days) . "/4 for " . date('M Y', $startT) . "]";
+                if ($usedInMonth + $days > $monthlyQuotaLimit) {
+                    $reason .= " [Note: Exceeds {$monthlyQuotaLimit} monthly leaves quota: " . ($usedInMonth + $days) . "/{$monthlyQuotaLimit} for " . date('M Y', $startT) . "]";
                 }
             }
 

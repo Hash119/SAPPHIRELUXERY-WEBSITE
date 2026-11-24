@@ -179,7 +179,7 @@ if (isset($pdo)) {
             $mlmStmt->execute([$empId, $selectedMonth]);
             $monthlyLeavesUsedThisMonth = (float)$mlmStmt->fetchColumn();
         } catch (Exception $e) {}
-        $monthlyQuota = 4.0;
+        $monthlyQuota = (float)($leaveAccrual['monthly_quota'] ?? $balance['monthly_quota'] ?? 4.0);
         $monthlyRemaining = max(0, $monthlyQuota - $monthlyLeavesUsedThisMonth);
 
         $missingPunchCount = 0;
@@ -244,7 +244,16 @@ require_once __DIR__ . '/includes/sidebar.php';
                     <p class="text-xs text-slate-400 mt-1">
                         <?= htmlspecialchars($emp['designation']) ?> &bull; <span class="text-slate-300"><?= htmlspecialchars($emp['department']) ?></span>
                         &bull; Shift: <span class="text-slate-200 font-mono"><?= substr($emp['shift_start'], 0, 5) ?> - <?= substr($emp['shift_end'], 0, 5) ?></span>
+                        <?php if (!empty($emp['email'])): ?>
+                            &bull; <span class="text-cyan-400 font-mono"><?= htmlspecialchars($emp['email']) ?></span>
+                        <?php endif; ?>
                     </p>
+                    <?php if (!empty($emp['join_date']) || !empty($emp['appointment_date'])): ?>
+                    <p class="text-[11px] text-slate-500 mt-0.5 font-mono">
+                        <?php if (!empty($emp['join_date'])): ?>Joined: <span class="text-slate-300"><?= htmlspecialchars($emp['join_date']) ?></span><?php endif; ?>
+                        <?php if (!empty($emp['appointment_date'])): ?> &bull; Date of Appointment: <span class="text-gold-400"><?= htmlspecialchars($emp['appointment_date']) ?></span><?php endif; ?>
+                    </p>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -386,7 +395,11 @@ require_once __DIR__ . '/includes/sidebar.php';
     <div class="bg-slate-900/70 border border-slate-800/80 rounded-2xl p-6">
         <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
             <h3 class="font-serif font-bold text-base text-white">My Leave Quotas & Balances</h3>
-            <?php if ($leaveAccrual['stage'] === 'probation_joining_year'): ?>
+            <?php if ($leaveAccrual['stage'] === 'custom_override'): ?>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-500/15 text-purple-300 border border-purple-500/30">
+                    <i class="fa-solid fa-sliders text-[11px]"></i> Custom Leave Entitlement (Admin Configured)
+                </span>
+            <?php elseif ($leaveAccrual['stage'] === 'probation_joining_year'): ?>
                 <?php
                 $probMonths = (int)($emp['probation_months'] ?? 6);
                 $joinDate = $emp['join_date'] ?? date('Y-m-d');
@@ -418,7 +431,7 @@ require_once __DIR__ . '/includes/sidebar.php';
                 <span class="text-xs text-gold-400 block font-semibold">Monthly Leave (<?= date('M', strtotime($selectedMonth . '-01')) ?>)</span>
                 <div class="mt-1 flex items-baseline justify-between">
                     <span class="text-lg font-bold text-gold-300"><?= rtrim(rtrim(number_format($monthlyRemaining, 1), '0'), '.') ?></span>
-                    <span class="text-[11px] text-slate-400">of 4 Days</span>
+                    <span class="text-[11px] text-slate-400">of <?= rtrim(rtrim(number_format($monthlyQuota, 1), '0'), '.') ?> Days</span>
                 </div>
                 <p class="text-[10px] text-slate-400 mt-0.5">Used: <?= rtrim(rtrim(number_format($monthlyLeavesUsedThisMonth, 1), '0'), '.') ?> days</p>
             </div>
@@ -709,25 +722,27 @@ require_once __DIR__ . '/includes/sidebar.php';
                     Leave Type *
                 </label>
                 <select name="leave_type" id="portal_leave_type" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 focus:border-gold-500 focus:outline-none">
-                    <option value="Monthly" class="text-gold-300 font-semibold">Monthly Leave (<?= $monthlyRemaining ?> of 4 days remaining for <?= date('M Y') ?>)</option>
+                    <option value="Monthly" class="text-gold-300 font-semibold">Monthly Leave (<?= rtrim(rtrim(number_format($monthlyRemaining, 1), '0'), '.') ?> of <?= rtrim(rtrim(number_format($monthlyQuota, 1), '0'), '.') ?> days remaining for <?= date('M Y') ?>)</option>
                     <?php
-                    // Use $leaveAccrual (dynamic accrual) for Annual & Casual eligibility
+                    // Use $leaveAccrual (dynamic accrual or custom admin quota) for Annual & Casual eligibility
                     $accrualForDropdown = $leaveAccrual ?? ['annual_total' => 14.0, 'casual_total' => 7.0, 'is_accruing' => false, 'stage' => 'confirmed_permanent'];
                     $annualAvailable = ($accrualForDropdown['annual_total'] ?? 0) > 0;
                     $casualAvailable = ($accrualForDropdown['casual_total'] ?? 0) > 0;
-                    $annualRemaining  = max(0, ($balance['annual_total'] ?? $accrualForDropdown['annual_total']) - ($balance['annual_used'] ?? 0));
-                    $casualRemaining  = max(0, ($balance['casual_total'] ?? $accrualForDropdown['casual_total']) - ($balance['casual_used'] ?? 0));
+                    $annualTotalDisp  = (float)($balance['annual_total'] ?? $accrualForDropdown['annual_total']);
+                    $casualTotalDisp  = (float)($balance['casual_total'] ?? $accrualForDropdown['casual_total']);
+                    $annualRemaining  = max(0, $annualTotalDisp - (float)($balance['annual_used'] ?? 0));
+                    $casualRemaining  = max(0, $casualTotalDisp - (float)($balance['casual_used'] ?? 0));
                     ?>
                     <?php if ($casualAvailable): ?>
-                        <option value="Casual">Casual Leave (<?= number_format($casualRemaining, 1) ?> remaining of 7)</option>
+                        <option value="Casual">Casual Leave (<?= rtrim(rtrim(number_format($casualRemaining, 1), '0'), '.') ?> remaining of <?= rtrim(rtrim(number_format($casualTotalDisp, 1), '0'), '.') ?>)</option>
                     <?php else: ?>
-                        <option value="Casual" disabled class="text-slate-600">Casual Leave – Unlocks after 1-Year Confirmation</option>
+                        <option value="Casual" disabled class="text-slate-600">Casual Leave – Unlocks after Date of Appointment</option>
                     <?php endif; ?>
                     <?php if ($annualAvailable): ?>
                         <?php if (!empty($accrualForDropdown['is_accruing'])): ?>
-                            <option value="Annual">Annual Leave – Accrued <?= number_format($accrualForDropdown['annual_total'], 1) ?> days (<?= number_format($annualRemaining, 1) ?> remaining)</option>
+                            <option value="Annual">Annual Leave – Accrued <?= rtrim(rtrim(number_format($annualTotalDisp, 1), '0'), '.') ?> days (<?= rtrim(rtrim(number_format($annualRemaining, 1), '0'), '.') ?> remaining)</option>
                         <?php else: ?>
-                            <option value="Annual">Annual Leave (<?= number_format($annualRemaining, 1) ?> remaining of 14)</option>
+                            <option value="Annual">Annual Leave (<?= rtrim(rtrim(number_format($annualRemaining, 1), '0'), '.') ?> remaining of <?= rtrim(rtrim(number_format($annualTotalDisp, 1), '0'), '.') ?>)</option>
                         <?php endif; ?>
                     <?php else: ?>
                         <option value="Annual" disabled class="text-slate-600">Annual Leave – Not yet eligible (Joining Year)</option>

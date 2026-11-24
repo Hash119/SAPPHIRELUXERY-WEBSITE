@@ -119,12 +119,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
         $empNo = trim($_POST['emp_no'] ?? '');
         $name = trim($_POST['name'] ?? '');
         $callingName = trim($_POST['calling_name'] ?? '');
-        $email = trim($_POST['email'] ?? '');
+
+        // Build email from editable prefix + locked domain suffix (default: @sapphire)
+        $emailDomain = trim($_POST['email_domain'] ?? '@sapphire');
+        if (empty($emailDomain) || $emailDomain[0] !== '@') {
+            $emailDomain = '@sapphire';
+        }
+        $emailPrefixRaw = trim($_POST['email_prefix'] ?? '');
+        if ($emailPrefixRaw !== '') {
+            // Strip any accidental @domain pasted into the prefix box and sanitize
+            $emailPrefix = strtolower(preg_replace('/@.*$/', '', $emailPrefixRaw));
+            $emailPrefix = preg_replace('/[^a-z0-9._-]/', '', $emailPrefix);
+            $email = ($emailPrefix !== '') ? ($emailPrefix . $emailDomain) : null;
+        } else {
+            // Fallback auto-generate from calling_name or first word of full name
+            $baseName = !empty($callingName) ? $callingName : $name;
+            $firstWord = preg_split('/\s+/', trim($baseName))[0] ?? '';
+            $autoPrefix = strtolower(preg_replace('/[^a-z0-9._-]/', '', $firstWord));
+            $email = ($autoPrefix !== '') ? ($autoPrefix . '@sapphire') : null;
+        }
+
         $phone = trim($_POST['phone'] ?? '');
         $gender = $_POST['gender'] ?? 'Female';
         $department = trim($_POST['department'] ?? 'Sapphire');
         $designation = trim($_POST['designation'] ?? 'Staff');
-        $joinDate = $_POST['join_date'] ?? date('Y-m-d');
+        $joinDate = !empty($_POST['join_date']) ? $_POST['join_date'] : date('Y-m-d');
+        $appointmentDate = !empty($_POST['appointment_date']) ? $_POST['appointment_date'] : null;
         $shiftStart = $_POST['shift_start'] ?? '09:00:00';
         $shiftEnd = $_POST['shift_end'] ?? '18:00:00';
         $graceMins = (int)($_POST['grace_period_mins'] ?? 15);
@@ -135,6 +155,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
         $probationMonths = (int)($_POST['probation_months'] ?? 6);
         if ($probationMonths !== 12) $probationMonths = 6;
         $probationEndDate = ($employmentType === 'probation') ? date('Y-m-d', strtotime("+{$probationMonths} months", strtotime($joinDate))) : null;
+
+        // Admin Custom Leave Entitlement Override (optional)
+        $customLeaveEnabled = ($isAdmin && isset($_POST['custom_leave_enabled'])) ? 1 : 0;
+        $customAnnualQuota  = ($customLeaveEnabled && $_POST['custom_annual_quota']  !== '') ? max(0, (float)$_POST['custom_annual_quota'])  : 14.0;
+        $customCasualQuota  = ($customLeaveEnabled && $_POST['custom_casual_quota']  !== '') ? max(0, (float)$_POST['custom_casual_quota'])  : 7.0;
+        $customMonthlyQuota = ($customLeaveEnabled && $_POST['custom_monthly_quota'] !== '') ? max(0, (float)$_POST['custom_monthly_quota']) : 4.0;
+        $customMedicalQuota = ($customLeaveEnabled && $_POST['custom_medical_quota'] !== '') ? max(0, (float)$_POST['custom_medical_quota']) : 14.0;
 
         $canApproveLeave = isset($_POST['can_approve_leave']) ? 1 : 0;
         $canApprovePunch = isset($_POST['can_approve_manual_punch']) ? 1 : 0;
@@ -151,11 +178,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
                 try {
                     $stmt = $pdo->prepare("
                         INSERT INTO employees 
-                        (machine_user_id, emp_no, name, calling_name, email, phone, gender, department, designation, employment_type, probation_months, probation_end_date, join_date, shift_start, shift_end, grace_period_mins, maternity_eligible, role, can_approve_leave, can_approve_manual_punch, password, plain_token, status)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        (machine_user_id, emp_no, name, calling_name, email, phone, gender, department, designation, employment_type, probation_months, probation_end_date, join_date, appointment_date, custom_leave_enabled, custom_annual_quota, custom_casual_quota, custom_monthly_quota, custom_medical_quota, shift_start, shift_end, grace_period_mins, maternity_eligible, role, can_approve_leave, can_approve_manual_punch, password, plain_token, status)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ");
                     $stmt->execute([
-                        $machineId, $empNo, $name, $callingName, $email, $phone, $gender, $department, $designation, $employmentType, $probationMonths, $probationEndDate, $joinDate, $shiftStart, $shiftEnd, $graceMins, $maternityEligible, $role, $canApproveLeave, $canApprovePunch, $hash, $plainPw, $status
+                        $machineId, $empNo, $name, $callingName, $email, $phone, $gender, $department, $designation, $employmentType, $probationMonths, $probationEndDate, $joinDate, $appointmentDate, $customLeaveEnabled, $customAnnualQuota, $customCasualQuota, $customMonthlyQuota, $customMedicalQuota, $shiftStart, $shiftEnd, $graceMins, $maternityEligible, $role, $canApproveLeave, $canApprovePunch, $hash, $plainPw, $status
                     ]);
                 } catch (Exception $eCol) {
                     $stmt = $pdo->prepare("
@@ -169,23 +196,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
                 }
                 $newId = $pdo->lastInsertId();
 
-                // Sync dynamic leave balances based on join_date & employment_type
+                // Sync dynamic leave balances based on join_date, appointment_date, employment_type or custom override
                 if (function_exists('sync_employee_leave_balances')) {
                     sync_employee_leave_balances($pdo, $newId, (int)date('Y'), (int)date('m'));
-                } else {
-                    $annualDays = ($employmentType === 'probation') ? 0.0 : 14.0;
-                    $casualDays = ($employmentType === 'probation') ? 0.0 : 7.0;
-                    $matDays = $maternityEligible ? 84.0 : 0.0;
-                    $balStmt = $pdo->prepare("
-                        INSERT INTO leave_balances 
-                        (employee_id, year, annual_total, casual_total, monthly_quota, medical_total, maternity_total) 
-                        VALUES (?, ?, ?, ?, 4.0, 14.0, ?)
-                        ON DUPLICATE KEY UPDATE annual_total = VALUES(annual_total), casual_total = VALUES(casual_total), monthly_quota = 4.0
-                    ");
-                    $balStmt->execute([$newId, (int)date('Y'), $annualDays, $casualDays, $matDays]);
                 }
 
-                $message = "Employee {$name} (#{$machineId}) registered successfully as " . ($employmentType === 'probation' ? "Probation ({$probationMonths} Months)" : "Confirmed") . "!";
+                $emailNote = $email ? " | Email: {$email}" : "";
+                $message = "Employee {$name} (#{$machineId}) registered successfully as " . ($customLeaveEnabled ? "Custom Leave Quota" : ($employmentType === 'probation' ? "Probation ({$probationMonths} Months)" : "Confirmed")) . "{$emailNote}!";
             } catch (Exception $e) {
                 $error = "Failed to add employee: " . $e->getMessage();
             }
@@ -195,14 +212,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
                 $sql = "UPDATE employees SET 
                         machine_user_id = ?, emp_no = ?, name = ?, calling_name = ?, email = ?, phone = ?, 
                         gender = ?, department = ?, designation = ?, employment_type = ?, probation_months = ?, 
-                        probation_end_date = ?, join_date = ?, shift_start = ?, shift_end = ?, 
-                        grace_period_mins = ?, maternity_eligible = ?, role = ?, status = ?, can_approve_leave = ?, 
+                        probation_end_date = ?, join_date = ?, appointment_date = ?,
+                        custom_leave_enabled = ?, custom_annual_quota = ?, custom_casual_quota = ?, custom_monthly_quota = ?, custom_medical_quota = ?,
+                        shift_start = ?, shift_end = ?, grace_period_mins = ?, maternity_eligible = ?, role = ?, status = ?, can_approve_leave = ?, 
                         can_approve_manual_punch = ?";
                 $params = [
                     $machineId, $empNo, $name, $callingName, $email, $phone, 
                     $gender, $department, $designation, $employmentType, $probationMonths, 
-                    $probationEndDate, $joinDate, $shiftStart, $shiftEnd, 
-                    $graceMins, $maternityEligible, $role, $status, $canApproveLeave, $canApprovePunch
+                    $probationEndDate, $joinDate, $appointmentDate,
+                    $customLeaveEnabled, $customAnnualQuota, $customCasualQuota, $customMonthlyQuota, $customMedicalQuota,
+                    $shiftStart, $shiftEnd, $graceMins, $maternityEligible, $role, $status, $canApproveLeave, $canApprovePunch
                 ];
 
                 if (!empty($password)) {
@@ -216,21 +235,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
                 $stmt = $pdo->prepare($sql);
                 $stmt->execute($params);
 
-                // Sync dynamic leave balances according to employment type, join date & maternity (preserves *_used)
+                // Sync dynamic leave balances according to employment type, appointment date, custom override & maternity
                 if (function_exists('sync_employee_leave_balances')) {
                     sync_employee_leave_balances($pdo, $empId, (int)date('Y'), (int)date('m'));
-                } else {
-                    $annualDays = ($employmentType === 'probation') ? 0.0 : 14.0;
-                    $casualDays = ($employmentType === 'probation') ? 0.0 : 7.0;
-                    $balUpdate = $pdo->prepare("
-                        UPDATE leave_balances 
-                        SET annual_total = ?, casual_total = ?, monthly_quota = 4.0, maternity_total = ? 
-                        WHERE employee_id = ? AND year = ?
-                    ");
-                    $balUpdate->execute([$annualDays, $casualDays, $maternityEligible ? 84.0 : 0.0, $empId, (int)date('Y')]);
                 }
 
-                $message = "Employee details updated successfully (" . ucfirst($employmentType) . ")!";
+                // If Admin also adjusted current year's used leaves (e.g., opening balance from paper records)
+                if ($isAdmin && isset($_POST['adjust_used_leaves']) && $_POST['adjust_used_leaves'] === '1') {
+                    $adjAnnUsed = max(0, (float)($_POST['adj_annual_used'] ?? 0));
+                    $adjCasUsed = max(0, (float)($_POST['adj_casual_used'] ?? 0));
+                    $adjMedUsed = max(0, (float)($_POST['adj_medical_used'] ?? 0));
+                    $adjStmt = $pdo->prepare("
+                        UPDATE leave_balances
+                        SET annual_used = ?, casual_used = ?, medical_used = ?
+                        WHERE employee_id = ? AND year = ?
+                    ");
+                    $adjStmt->execute([$adjAnnUsed, $adjCasUsed, $adjMedUsed, $empId, (int)date('Y')]);
+                }
+
+                $message = "Employee details updated successfully (" . ($customLeaveEnabled ? "Custom Leave Quota" : ucfirst($employmentType)) . ")!";
             } catch (Exception $e) {
                 $error = "Failed to update employee: " . $e->getMessage();
             }
@@ -248,10 +271,19 @@ $nextEmpNo = 'EMP001';
 
 if (isset($pdo)) {
     try {
-        $q = "SELECT * FROM employees";
-        if ($statusFilter === 'active') $q .= " WHERE status = 'active'";
-        elseif ($statusFilter === 'inactive') $q .= " WHERE status = 'inactive'";
-        $q .= " ORDER BY status ASC, machine_user_id ASC";
+        $curYr = (int)date('Y');
+        $q = "SELECT e.*,
+                     COALESCE(lb.annual_total, 14.0) AS bal_annual_total,
+                     COALESCE(lb.annual_used, 0.0)   AS bal_annual_used,
+                     COALESCE(lb.casual_total, 7.0)  AS bal_casual_total,
+                     COALESCE(lb.casual_used, 0.0)   AS bal_casual_used,
+                     COALESCE(lb.medical_total, 14.0) AS bal_medical_total,
+                     COALESCE(lb.medical_used, 0.0)  AS bal_medical_used
+              FROM employees e
+              LEFT JOIN leave_balances lb ON lb.employee_id = e.id AND lb.year = {$curYr}";
+        if ($statusFilter === 'active') $q .= " WHERE e.status = 'active'";
+        elseif ($statusFilter === 'inactive') $q .= " WHERE e.status = 'inactive'";
+        $q .= " ORDER BY e.status ASC, e.machine_user_id ASC";
         
         $employees = $pdo->query($q)->fetchAll();
         
@@ -339,6 +371,12 @@ require_once __DIR__ . '/includes/sidebar.php';
                                     <div class="text-[10px] text-slate-500 font-mono mt-0.5 flex items-center gap-2 flex-wrap">
                                         <span>Code: <strong><?= htmlspecialchars($emp['emp_no']) ?></strong></span>
                                         <span>&bull; <?= htmlspecialchars($emp['designation']) ?></span>
+                                        <?php if (!empty($emp['email'])): ?>
+                                            <span class="text-cyan-400/90"><i class="fa-regular fa-envelope text-[9px]"></i> <?= htmlspecialchars($emp['email']) ?></span>
+                                        <?php endif; ?>
+                                        <?php if (!empty($emp['appointment_date'])): ?>
+                                            <span class="text-slate-400" title="Date of Appointment"><i class="fa-regular fa-calendar-check text-[9px] text-gold-400"></i> Appt: <?= htmlspecialchars($emp['appointment_date']) ?></span>
+                                        <?php endif; ?>
                                         <?php if ($isAdmin): ?>
                                             <span class="inline-flex items-center gap-1 text-[10px] text-slate-300 font-mono bg-slate-800/90 px-1.5 py-0.5 rounded border border-slate-700" title="Emergency Password Lookup (Developer & Admin)">
                                                 <i class="fa-solid fa-key text-[9px] text-gold-400"></i> PW: <strong class="text-gold-300"><?= htmlspecialchars($emp['plain_token'] ?? '123456') ?></strong>
@@ -352,7 +390,11 @@ require_once __DIR__ . '/includes/sidebar.php';
                                         <span class="inline-block px-1.5 py-0.2 rounded text-[10px] uppercase font-semibold <?= $emp['role'] === 'admin' ? 'bg-amber-500/20 text-amber-300' : ($emp['role'] === 'manager' || $emp['role'] === 'supervisor' ? 'bg-indigo-500/20 text-indigo-300' : 'bg-slate-800 text-slate-400') ?>">
                                             <?= htmlspecialchars($emp['role']) ?>
                                         </span>
-                                        <?php if (($emp['employment_type'] ?? 'confirmed') === 'probation'): ?>
+                                        <?php if (!empty($emp['custom_leave_enabled']) && (int)$emp['custom_leave_enabled'] === 1): ?>
+                                            <span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-semibold bg-purple-500/15 text-purple-300 border border-purple-500/30" title="Custom Admin Leave Quota: Annual <?= $emp['custom_annual_quota'] ?>, Casual <?= $emp['custom_casual_quota'] ?>, Monthly <?= $emp['custom_monthly_quota'] ?>">
+                                                <i class="fa-solid fa-sliders text-[9px]"></i> Custom Leaves
+                                            </span>
+                                        <?php elseif (($emp['employment_type'] ?? 'confirmed') === 'probation'): ?>
                                             <?php
                                             $pMonths = (int)($emp['probation_months'] ?? 6);
                                             $jDate = $emp['join_date'] ?? date('Y-m-d');
@@ -527,7 +569,7 @@ require_once __DIR__ . '/includes/sidebar.php';
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
                         Full Name *
                     </label>
-                    <input type="text" name="name" id="f_name" required placeholder="e.g. Sonali Perera"
+                    <input type="text" name="name" id="f_name" required placeholder="e.g. Udara Perera" oninput="autoFillEmailPrefix()"
                         class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 focus:border-gold-500 focus:outline-none">
                 </div>
 
@@ -536,8 +578,47 @@ require_once __DIR__ . '/includes/sidebar.php';
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
                         Calling / Display Name
                     </label>
-                    <input type="text" name="calling_name" id="f_calling_name" placeholder="e.g. Sonali"
+                    <input type="text" name="calling_name" id="f_calling_name" placeholder="e.g. Udara" oninput="autoFillEmailPrefix()"
                         class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 focus:border-gold-500 focus:outline-none">
+                </div>
+
+                <!-- Staff Email (Editable Prefix + Locked @sapphire) -->
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                        Staff Email / Login ID
+                    </label>
+                    <input type="hidden" name="email_domain" id="f_email_domain" value="@sapphire">
+                    <div class="flex items-stretch rounded-xl overflow-hidden border border-slate-800 bg-slate-950 focus-within:border-gold-500 transition-colors">
+                        <input type="text" name="email_prefix" id="f_email_prefix" placeholder="e.g. udara"
+                            oninput="onEmailPrefixInput()"
+                            class="flex-1 min-w-0 px-3.5 py-2.5 bg-transparent text-sm text-slate-100 font-mono focus:outline-none">
+                        <span id="f_email_domain_badge" class="px-3.5 py-2.5 bg-slate-900 border-l border-slate-800 text-xs font-mono font-bold text-gold-400 flex items-center select-none">
+                            @sapphire
+                        </span>
+                    </div>
+                    <p class="text-[10px] text-slate-500 mt-1">
+                        Auto-fills from user name (e.g. <span class="font-mono text-gold-400">udara@sapphire</span>). You can edit the prefix before <span class="font-mono text-slate-300">@sapphire</span> anytime.
+                    </p>
+                </div>
+
+                <!-- Join Date -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                        Join Date *
+                    </label>
+                    <input type="date" name="join_date" id="f_join_date" required value="<?= date('Y-m-d') ?>" onchange="onJoinDateChange()"
+                        class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 font-mono focus:border-gold-500 focus:outline-none">
+                    <p class="text-[10px] text-slate-500 mt-1">Date employee joined (start of probation/service)</p>
+                </div>
+
+                <!-- Date of Appointment -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                        Date of Appointment
+                    </label>
+                    <input type="date" name="appointment_date" id="f_appointment_date" oninput="onAppointmentDateInput()"
+                        class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 font-mono focus:border-gold-500 focus:outline-none">
+                    <p class="text-[10px] text-slate-500 mt-1">Full 14 Annual + 7 Casual unlock from 1st of following month</p>
                 </div>
 
                 <!-- Gender -->
@@ -669,6 +750,73 @@ require_once __DIR__ . '/includes/sidebar.php';
                 </div>
             </div>
 
+            <!-- ADMIN CUSTOM LEAVE ENTITLEMENT OVERRIDE (OPTIONAL) -->
+            <?php if ($isAdmin): ?>
+            <div class="p-4 rounded-xl bg-indigo-950/25 border border-indigo-500/30 mt-4 space-y-3">
+                <label class="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" name="custom_leave_enabled" id="f_custom_leave_enabled" onchange="handleCustomLeaveToggle()" class="w-4 h-4 rounded text-indigo-500 focus:ring-indigo-500 bg-slate-900 border-slate-700">
+                    <div>
+                        <span class="text-xs font-semibold text-indigo-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-sliders"></i> Customize Leave Entitlement (Admin Override)
+                        </span>
+                        <p class="text-[11px] text-slate-400 mt-0.5">
+                            Optional: Turn ON to manually set custom Annual, Casual, Monthly &amp; Medical leave quotas for this employee instead of automatic probation/accrual rules.
+                        </p>
+                    </div>
+                </label>
+
+                <div id="customLeaveFields" class="hidden pt-2 border-t border-indigo-500/20 space-y-3">
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div>
+                            <label class="block text-[10px] font-semibold uppercase tracking-wider text-indigo-300 mb-1">Annual / Yr</label>
+                            <input type="number" step="0.5" min="0" max="60" name="custom_annual_quota" id="f_custom_annual" value="14"
+                                class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-white font-mono focus:border-indigo-400 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-semibold uppercase tracking-wider text-indigo-300 mb-1">Casual / Yr</label>
+                            <input type="number" step="0.5" min="0" max="30" name="custom_casual_quota" id="f_custom_casual" value="7"
+                                class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-white font-mono focus:border-indigo-400 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-semibold uppercase tracking-wider text-gold-300 mb-1">Monthly / Mo</label>
+                            <input type="number" step="0.5" min="0" max="15" name="custom_monthly_quota" id="f_custom_monthly" value="4"
+                                class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-white font-mono focus:border-indigo-400 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-semibold uppercase tracking-wider text-indigo-300 mb-1">Medical / Yr</label>
+                            <input type="number" step="0.5" min="0" max="60" name="custom_medical_quota" id="f_custom_medical" value="14"
+                                class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-white font-mono focus:border-indigo-400 focus:outline-none">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Optional: Adjust Already-Used Leaves This Year (Visible when editing) -->
+                <div id="adjustUsedBox" class="hidden pt-2 border-t border-indigo-500/20">
+                    <label class="flex items-center gap-2 cursor-pointer mb-2">
+                        <input type="checkbox" name="adjust_used_leaves" id="f_adjust_used_leaves" value="1" onchange="handleAdjustUsedToggle()" class="w-3.5 h-3.5 rounded text-amber-500 bg-slate-900 border-slate-700">
+                        <span class="text-[11px] font-semibold text-amber-300">Adjust <?= date('Y') ?> Leaves Already Taken (Opening Balance)</span>
+                    </label>
+                    <div id="adjustUsedFields" class="hidden grid grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-[10px] text-slate-400 mb-1">Annual Used</label>
+                            <input type="number" step="0.5" min="0" max="60" name="adj_annual_used" id="f_adj_annual_used" value="0"
+                                class="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-xs text-amber-300 font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-400 mb-1">Casual Used</label>
+                            <input type="number" step="0.5" min="0" max="30" name="adj_casual_used" id="f_adj_casual_used" value="0"
+                                class="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-xs text-amber-300 font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-400 mb-1">Medical Used</label>
+                            <input type="number" step="0.5" min="0" max="60" name="adj_medical_used" id="f_adj_medical_used" value="0"
+                                class="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-xs text-amber-300 font-mono">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+
             <!-- MATERNITY LEAVE TOGGLE IN MODAL -->
             <div id="maternityBox" class="p-4 rounded-xl bg-purple-950/30 border border-purple-800/40 mt-4">
                 <label class="flex items-center gap-3 cursor-pointer">
@@ -713,6 +861,75 @@ require_once __DIR__ . '/includes/sidebar.php';
     const modal = document.getElementById('employeeModal');
     const maternityBox = document.getElementById('maternityBox');
     const probationDurationBox = document.getElementById('probationDurationBox');
+    let emailPrefixManuallyEdited = false;
+    let appointmentDateManuallyEdited = false;
+
+    function sanitizeEmailPrefix(raw) {
+        if (!raw) return '';
+        const firstWord = raw.trim().split(/\s+/)[0] || '';
+        return firstWord.toLowerCase().replace(/[^a-z0-9._-]/g, '');
+    }
+
+    function autoFillEmailPrefix() {
+        const isCreating = document.getElementById('formAction').value === 'create';
+        if (!isCreating || emailPrefixManuallyEdited) return;
+        const calling = document.getElementById('f_calling_name').value.trim();
+        const full = document.getElementById('f_name').value.trim();
+        const prefix = sanitizeEmailPrefix(calling || full);
+        document.getElementById('f_email_prefix').value = prefix;
+    }
+
+    function onEmailPrefixInput() {
+        emailPrefixManuallyEdited = true;
+        const el = document.getElementById('f_email_prefix');
+        // Strip @ and anything after it so @sapphire suffix stays clean & locked
+        if (el.value.includes('@')) {
+            el.value = el.value.split('@')[0];
+        }
+        el.value = el.value.toLowerCase().replace(/[^a-z0-9._-]/g, '');
+    }
+
+    function addOneYear(dateStr) {
+        if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return '';
+        const parts = dateStr.split('-').map(Number);
+        const nextYr = parts[0] + 1;
+        const mm = String(parts[1]).padStart(2, '0');
+        const dd = String(parts[2]).padStart(2, '0');
+        return `${nextYr}-${mm}-${dd}`;
+    }
+
+    function onJoinDateChange() {
+        if (!appointmentDateManuallyEdited) {
+            const jVal = document.getElementById('f_join_date').value;
+            document.getElementById('f_appointment_date').value = addOneYear(jVal);
+        }
+    }
+
+    function onAppointmentDateInput() {
+        appointmentDateManuallyEdited = true;
+    }
+
+    function handleCustomLeaveToggle() {
+        const chk = document.getElementById('f_custom_leave_enabled');
+        const box = document.getElementById('customLeaveFields');
+        if (!chk || !box) return;
+        if (chk.checked) {
+            box.classList.remove('hidden');
+        } else {
+            box.classList.add('hidden');
+        }
+    }
+
+    function handleAdjustUsedToggle() {
+        const chk = document.getElementById('f_adjust_used_leaves');
+        const box = document.getElementById('adjustUsedFields');
+        if (!chk || !box) return;
+        if (chk.checked) {
+            box.classList.remove('hidden');
+        } else {
+            box.classList.add('hidden');
+        }
+    }
 
     function handleGenderChange() {
         const gender = document.getElementById('f_gender').value;
@@ -735,11 +952,21 @@ require_once __DIR__ . '/includes/sidebar.php';
     }
 
     function openNewModal() {
+        emailPrefixManuallyEdited = false;
+        appointmentDateManuallyEdited = false;
+        const todayStr = '<?= date('Y-m-d') ?>';
         document.getElementById('modalTitle').innerText = 'Register New Employee';
         document.getElementById('formAction').value = 'create';
         document.getElementById('formEmpId').value = '';
+        document.getElementById('f_machine_user_id').value = '<?= $nextMachineId ?>';
+        document.getElementById('f_emp_no').value = '<?= $nextEmpNo ?>';
         document.getElementById('f_name').value = '';
         document.getElementById('f_calling_name').value = '';
+        document.getElementById('f_email_prefix').value = '';
+        document.getElementById('f_email_domain').value = '@sapphire';
+        document.getElementById('f_email_domain_badge').innerText = '@sapphire';
+        document.getElementById('f_join_date').value = todayStr;
+        document.getElementById('f_appointment_date').value = addOneYear(todayStr);
         document.getElementById('f_phone').value = '';
         document.getElementById('f_designation').value = '';
         document.getElementById('f_gender').value = 'Female';
@@ -751,12 +978,29 @@ require_once __DIR__ . '/includes/sidebar.php';
         document.getElementById('f_can_approve_manual_punch').checked = false;
         document.getElementById('f_maternity_eligible').checked = false;
         document.getElementById('f_password').value = '123456';
+
+        const custChk = document.getElementById('f_custom_leave_enabled');
+        if (custChk) {
+            custChk.checked = false;
+            document.getElementById('f_custom_annual').value = '14';
+            document.getElementById('f_custom_casual').value = '7';
+            document.getElementById('f_custom_monthly').value = '4';
+            document.getElementById('f_custom_medical').value = '14';
+            handleCustomLeaveToggle();
+        }
+        const adjBox = document.getElementById('adjustUsedBox');
+        if (adjBox) adjBox.classList.add('hidden');
+        const adjChk = document.getElementById('f_adjust_used_leaves');
+        if (adjChk) { adjChk.checked = false; handleAdjustUsedToggle(); }
+
         handleGenderChange();
         handleEmploymentTypeChange();
         modal.classList.remove('hidden');
     }
 
     function openEditModal(emp) {
+        emailPrefixManuallyEdited = true;
+        appointmentDateManuallyEdited = Boolean(emp.appointment_date);
         document.getElementById('modalTitle').innerText = 'Edit Employee #' + emp.machine_user_id;
         document.getElementById('formAction').value = 'update';
         document.getElementById('formEmpId').value = emp.id;
@@ -764,6 +1008,28 @@ require_once __DIR__ . '/includes/sidebar.php';
         document.getElementById('f_emp_no').value = emp.emp_no;
         document.getElementById('f_name').value = emp.name;
         document.getElementById('f_calling_name').value = emp.calling_name || '';
+
+        // Populate email prefix + locked domain suffix
+        const rawEmail = (emp.email || '').trim();
+        if (rawEmail && rawEmail.includes('@')) {
+            const idx = rawEmail.indexOf('@');
+            const pref = rawEmail.substring(0, idx);
+            const dom = rawEmail.substring(idx);
+            document.getElementById('f_email_prefix').value = pref;
+            // Keep existing non-@sapphire domain for legacy admin accounts, otherwise @sapphire
+            const finalDom = (dom.toLowerCase() === '@sapphire' || emp.role !== 'admin') ? '@sapphire' : dom;
+            document.getElementById('f_email_domain').value = finalDom;
+            document.getElementById('f_email_domain_badge').innerText = finalDom;
+        } else {
+            document.getElementById('f_email_prefix').value = sanitizeEmailPrefix(emp.calling_name || emp.name);
+            document.getElementById('f_email_domain').value = '@sapphire';
+            document.getElementById('f_email_domain_badge').innerText = '@sapphire';
+        }
+
+        const jDate = emp.join_date || '<?= date('Y-m-d') ?>';
+        document.getElementById('f_join_date').value = jDate;
+        document.getElementById('f_appointment_date').value = emp.appointment_date || addOneYear(jDate);
+
         document.getElementById('f_gender').value = emp.gender;
         document.getElementById('f_department').value = emp.department;
         document.getElementById('f_designation').value = emp.designation || '';
@@ -782,6 +1048,28 @@ require_once __DIR__ . '/includes/sidebar.php';
         document.getElementById('f_can_approve_manual_punch').checked = emp.can_approve_manual_punch == 1;
         document.getElementById('f_maternity_eligible').checked = emp.maternity_eligible == 1;
         document.getElementById('f_password').value = '';
+
+        // Populate Admin custom leave entitlement & opening used balances
+        const custChk = document.getElementById('f_custom_leave_enabled');
+        if (custChk) {
+            custChk.checked = emp.custom_leave_enabled == 1;
+            document.getElementById('f_custom_annual').value = emp.custom_annual_quota ?? emp.bal_annual_total ?? 14;
+            document.getElementById('f_custom_casual').value = emp.custom_casual_quota ?? emp.bal_casual_total ?? 7;
+            document.getElementById('f_custom_monthly').value = emp.custom_monthly_quota ?? 4;
+            document.getElementById('f_custom_medical').value = emp.custom_medical_quota ?? emp.bal_medical_total ?? 14;
+            handleCustomLeaveToggle();
+        }
+        const adjBox = document.getElementById('adjustUsedBox');
+        if (adjBox) adjBox.classList.remove('hidden');
+        const adjChk = document.getElementById('f_adjust_used_leaves');
+        if (adjChk) {
+            adjChk.checked = false;
+            document.getElementById('f_adj_annual_used').value = emp.bal_annual_used ?? 0;
+            document.getElementById('f_adj_casual_used').value = emp.bal_casual_used ?? 0;
+            document.getElementById('f_adj_medical_used').value = emp.bal_medical_used ?? 0;
+            handleAdjustUsedToggle();
+        }
+
         handleGenderChange();
         handleEmploymentTypeChange();
         modal.classList.remove('hidden');

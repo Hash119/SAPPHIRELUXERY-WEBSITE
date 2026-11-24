@@ -55,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     OR emp_no = ? 
                     OR emp_no = ? 
                     OR emp_no = ? 
-                    OR email = ?
+                    OR LOWER(email) = LOWER(?)
                 ) 
                 LIMIT 1
             ");
@@ -269,7 +269,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <i class="fa-solid fa-id-card"></i>
                         </span>
                         <input type="text" id="login_id" name="login_id" required autofocus
-                            placeholder="e.g. 1, EMP001, or admin email"
+                            placeholder="e.g. 1, EMP001, or udara@sapphire"
                             value="<?= htmlspecialchars($_POST['login_id'] ?? '') ?>"
                             class="w-full pl-10 pr-4 py-3 bg-slate-950/70 border border-slate-800 rounded-xl text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors">
                     </div>
