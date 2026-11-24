@@ -345,8 +345,16 @@ require_once __DIR__ . '/includes/sidebar.php';
         <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
             <h3 class="font-serif font-bold text-base text-white">My Leave Quotas & Balances</h3>
             <?php if ($isProbation): ?>
+                <?php
+                $probMonths = (int)($user['probation_months'] ?? 6);
+                $joinDate = $user['join_date'] ?? date('Y-m-d');
+                $probEnd = !empty($user['probation_end_date']) ? $user['probation_end_date'] : date('Y-m-d', strtotime("+{$probMonths} months", strtotime($joinDate)));
+                $today = date('Y-m-d');
+                $daysLeft = max(0, round((strtotime($probEnd) - strtotime($today)) / 86400));
+                $isDue = ($today >= $probEnd);
+                ?>
                 <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                    <i class="fa-solid fa-clock-rotate-left text-[11px]"></i> Probation Period (4 Monthly Leaves / Month)
+                    <i class="fa-solid fa-clock-rotate-left text-[11px]"></i> Probation (<?= $probMonths ?> Months &bull; <?= $isDue ? 'Confirmation Due' : "{$daysLeft} days remaining" ?>)
                 </span>
             <?php else: ?>
                 <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-sky-500/15 text-sky-300 border border-sky-500/30">

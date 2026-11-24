@@ -57,6 +57,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
         }
     }
 
+    // 1.2 Quick Confirm Employee (Admin only - completes probation & unlocks 14 Annual + 7 Casual leaves)
+    elseif ($action === 'confirm_employee' && $isAdmin) {
+        $empId = (int)($_POST['emp_id'] ?? 0);
+        try {
+            $stmt = $pdo->prepare("UPDATE employees SET employment_type = 'confirmed' WHERE id = ?");
+            $stmt->execute([$empId]);
+            
+            // Allocate 14 Annual and 7 Casual leaves for current calendar year
+            $curYear = (int)date('Y');
+            $balStmt = $pdo->prepare("
+                UPDATE leave_balances 
+                SET annual_total = 14.0, casual_total = 7.0 
+                WHERE employee_id = ? AND year = ?
+            ");
+            $balStmt->execute([$empId, $curYear]);
+            
+            $empName = $pdo->query("SELECT name FROM employees WHERE id = {$empId}")->fetchColumn() ?: 'Employee';
+            $message = "🎉 {$empName} has been officially Confirmed! 14 Annual & 7 Casual leaves have been unlocked.";
+        } catch (Exception $e) {
+            $error = "Failed to confirm employee: " . $e->getMessage();
+        }
+    }
+
     // 2. Quick Toggle Maternity Leave Option (Ladies only)
     elseif ($action === 'toggle_maternity' && $isAdmin) {
         $empId = (int)($_POST['emp_id'] ?? 0);
@@ -105,6 +128,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
         $role = $_POST['role'] ?? 'employee';
         $status = $_POST['status'] ?? 'active';
         $employmentType = ($_POST['employment_type'] ?? 'confirmed') === 'probation' ? 'probation' : 'confirmed';
+        $probationMonths = (int)($_POST['probation_months'] ?? 6);
+        if ($probationMonths !== 12) $probationMonths = 6;
+        $probationEndDate = ($employmentType === 'probation') ? date('Y-m-d', strtotime("+{$probationMonths} months", strtotime($joinDate))) : null;
+
         $canApproveLeave = isset($_POST['can_approve_leave']) ? 1 : 0;
         $canApprovePunch = isset($_POST['can_approve_manual_punch']) ? 1 : 0;
         $password = trim($_POST['password'] ?? '');
@@ -120,20 +147,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
                 try {
                     $stmt = $pdo->prepare("
                         INSERT INTO employees 
-                        (machine_user_id, emp_no, name, calling_name, email, phone, gender, department, designation, employment_type, join_date, shift_start, shift_end, grace_period_mins, maternity_eligible, role, can_approve_leave, can_approve_manual_punch, password, plain_token, status)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        (machine_user_id, emp_no, name, calling_name, email, phone, gender, department, designation, employment_type, probation_months, probation_end_date, join_date, shift_start, shift_end, grace_period_mins, maternity_eligible, role, can_approve_leave, can_approve_manual_punch, password, plain_token, status)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ");
                     $stmt->execute([
-                        $machineId, $empNo, $name, $callingName, $email, $phone, $gender, $department, $designation, $employmentType, $joinDate, $shiftStart, $shiftEnd, $graceMins, $maternityEligible, $role, $canApproveLeave, $canApprovePunch, $hash, $plainPw, $status
+                        $machineId, $empNo, $name, $callingName, $email, $phone, $gender, $department, $designation, $employmentType, $probationMonths, $probationEndDate, $joinDate, $shiftStart, $shiftEnd, $graceMins, $maternityEligible, $role, $canApproveLeave, $canApprovePunch, $hash, $plainPw, $status
                     ]);
                 } catch (Exception $eCol) {
                     $stmt = $pdo->prepare("
                         INSERT INTO employees 
-                        (machine_user_id, emp_no, name, calling_name, email, phone, gender, department, designation, employment_type, join_date, shift_start, shift_end, grace_period_mins, maternity_eligible, role, can_approve_leave, can_approve_manual_punch, password, status)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        (machine_user_id, emp_no, name, calling_name, email, phone, gender, department, designation, employment_type, probation_months, probation_end_date, join_date, shift_start, shift_end, grace_period_mins, maternity_eligible, role, can_approve_leave, can_approve_manual_punch, password, status)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ");
                     $stmt->execute([
-                        $machineId, $empNo, $name, $callingName, $email, $phone, $gender, $department, $designation, $employmentType, $joinDate, $shiftStart, $shiftEnd, $graceMins, $maternityEligible, $role, $canApproveLeave, $canApprovePunch, $hash, $status
+                        $machineId, $empNo, $name, $callingName, $email, $phone, $gender, $department, $designation, $employmentType, $probationMonths, $probationEndDate, $joinDate, $shiftStart, $shiftEnd, $graceMins, $maternityEligible, $role, $canApproveLeave, $canApprovePunch, $hash, $status
                     ]);
                 }
                 $newId = $pdo->lastInsertId();
@@ -150,7 +177,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
                 ");
                 $balStmt->execute([$newId, (int)date('Y'), $annualDays, $casualDays, $matDays]);
 
-                $message = "Employee {$name} (#{$machineId}) registered successfully as " . ucfirst($employmentType) . "!";
+                $message = "Employee {$name} (#{$machineId}) registered successfully as " . ($employmentType === 'probation' ? "Probation ({$probationMonths} Months)" : "Confirmed") . "!";
             } catch (Exception $e) {
                 $error = "Failed to add employee: " . $e->getMessage();
             }
@@ -159,12 +186,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
             try {
                 $sql = "UPDATE employees SET 
                         machine_user_id = ?, emp_no = ?, name = ?, calling_name = ?, email = ?, phone = ?, 
-                        gender = ?, department = ?, designation = ?, employment_type = ?, shift_start = ?, shift_end = ?, 
+                        gender = ?, department = ?, designation = ?, employment_type = ?, probation_months = ?, 
+                        probation_end_date = ?, join_date = ?, shift_start = ?, shift_end = ?, 
                         grace_period_mins = ?, maternity_eligible = ?, role = ?, status = ?, can_approve_leave = ?, 
                         can_approve_manual_punch = ?";
                 $params = [
                     $machineId, $empNo, $name, $callingName, $email, $phone, 
-                    $gender, $department, $designation, $employmentType, $shiftStart, $shiftEnd, 
+                    $gender, $department, $designation, $employmentType, $probationMonths, 
+                    $probationEndDate, $joinDate, $shiftStart, $shiftEnd, 
                     $graceMins, $maternityEligible, $role, $status, $canApproveLeave, $canApprovePunch
                 ];
 
@@ -312,9 +341,27 @@ require_once __DIR__ . '/includes/sidebar.php';
                                             <?= htmlspecialchars($emp['role']) ?>
                                         </span>
                                         <?php if (($emp['employment_type'] ?? 'confirmed') === 'probation'): ?>
-                                            <span class="inline-block px-1.5 py-0.2 rounded text-[10px] font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30" title="Probation: 4 Monthly Leaves only (No Annual/Casual)">
-                                                <i class="fa-solid fa-clock-rotate-left text-[9px]"></i> Probation
+                                            <?php
+                                            $pMonths = (int)($emp['probation_months'] ?? 6);
+                                            $jDate = $emp['join_date'] ?? date('Y-m-d');
+                                            $pEnd = !empty($emp['probation_end_date']) ? $emp['probation_end_date'] : date('Y-m-d', strtotime("+{$pMonths} months", strtotime($jDate)));
+                                            $today = date('Y-m-d');
+                                            $isDue = ($today >= $pEnd);
+                                            $daysLeft = round((strtotime($pEnd) - strtotime($today)) / 86400);
+                                            ?>
+                                            <span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30" title="Probation: <?= $pMonths ?> Months (Ends: <?= $pEnd ?>)">
+                                                <i class="fa-solid fa-clock-rotate-left text-[9px]"></i> Probation <?= $pMonths ?>M (<?= $isDue ? 'Due' : "{$daysLeft}d left" ?>)
                                             </span>
+                                            <?php if ($isDue && $isAdmin): ?>
+                                                <form method="POST" action="employees.php" class="inline-block">
+                                                    <input type="hidden" name="action" value="confirm_employee">
+                                                    <input type="hidden" name="emp_id" value="<?= $emp['id'] ?>">
+                                                    <button type="submit" onclick="return confirm('Confirm <?= htmlspecialchars(addslashes($emp['name'])) ?> as a Permanent Staff Member? This will immediately unlock their 14 Annual and 7 Casual leaves.');"
+                                                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 transition-colors animate-pulse" title="Probation period completed! Click to Confirm">
+                                                        <i class="fa-solid fa-award text-[9px]"></i> Confirm Now
+                                                    </button>
+                                                </form>
+                                            <?php endif; ?>
                                         <?php else: ?>
                                             <span class="inline-block px-1.5 py-0.2 rounded text-[10px] font-semibold bg-sky-500/15 text-sky-300 border border-sky-500/30" title="Confirmed: 14 Annual + 7 Casual + 4 Monthly Leaves">
                                                 <i class="fa-solid fa-circle-check text-[9px]"></i> Confirmed
@@ -556,10 +603,36 @@ require_once __DIR__ . '/includes/sidebar.php';
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
                         Employment Status (Leave Quota)
                     </label>
-                    <select name="employment_type" id="f_employment_type" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 focus:border-gold-500 focus:outline-none">
+                    <select name="employment_type" id="f_employment_type" onchange="handleEmploymentTypeChange()" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 focus:border-gold-500 focus:outline-none">
                         <option value="confirmed">Confirmed (Annual 14 + Casual 7 + Monthly 4)</option>
                         <option value="probation">Probation (Monthly 4 Only - No Annual/Casual)</option>
                     </select>
+                </div>
+
+                <!-- Probation Period Duration (6 Months vs 12 Months) -->
+                <div id="probationDurationBox" class="sm:col-span-2 p-3.5 rounded-xl bg-amber-950/20 border border-amber-500/30 hidden">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-amber-300 mb-2">
+                        <i class="fa-solid fa-clock-rotate-left mr-1"></i> Probation Period Duration
+                    </label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="flex items-center gap-2.5 p-2.5 rounded-lg bg-slate-900 border border-slate-700 cursor-pointer hover:border-amber-500/60 transition-colors">
+                            <input type="radio" name="probation_months" id="f_prob_6" value="6" checked class="text-amber-500 focus:ring-amber-500">
+                            <div>
+                                <span class="text-xs text-slate-100 font-semibold block">6 Months Probation</span>
+                                <span class="text-[10px] text-slate-400">Standard 6-month trial</span>
+                            </div>
+                        </label>
+                        <label class="flex items-center gap-2.5 p-2.5 rounded-lg bg-slate-900 border border-slate-700 cursor-pointer hover:border-amber-500/60 transition-colors">
+                            <input type="radio" name="probation_months" id="f_prob_12" value="12" class="text-amber-500 focus:ring-amber-500">
+                            <div>
+                                <span class="text-xs text-slate-100 font-semibold block">12 Months (1 Year)</span>
+                                <span class="text-[10px] text-slate-400">12-month extended trial</span>
+                            </div>
+                        </label>
+                    </div>
+                    <p class="text-[11px] text-amber-400/80 mt-2">
+                        💡 Probation employees receive only 4 Monthly Leaves per month. Once their 6 or 12 months complete, the system will alert you to officially confirm them and unlock their 14 Annual and 7 Casual leaves.
+                    </p>
                 </div>
 
                 <!-- Status (Active / Inactive) -->
@@ -627,6 +700,7 @@ require_once __DIR__ . '/includes/sidebar.php';
 <script>
     const modal = document.getElementById('employeeModal');
     const maternityBox = document.getElementById('maternityBox');
+    const probationDurationBox = document.getElementById('probationDurationBox');
 
     function handleGenderChange() {
         const gender = document.getElementById('f_gender').value;
@@ -636,6 +710,15 @@ require_once __DIR__ . '/includes/sidebar.php';
             matCheckbox.checked = false;
         } else {
             maternityBox.classList.remove('hidden');
+        }
+    }
+
+    function handleEmploymentTypeChange() {
+        const type = document.getElementById('f_employment_type').value;
+        if (type === 'probation') {
+            probationDurationBox.classList.remove('hidden');
+        } else {
+            probationDurationBox.classList.add('hidden');
         }
     }
 
@@ -650,12 +733,14 @@ require_once __DIR__ . '/includes/sidebar.php';
         document.getElementById('f_gender').value = 'Female';
         document.getElementById('f_role').value = 'employee';
         document.getElementById('f_employment_type').value = 'confirmed';
+        document.getElementById('f_prob_6').checked = true;
         document.getElementById('f_status').value = 'active';
         document.getElementById('f_can_approve_leave').checked = false;
         document.getElementById('f_can_approve_manual_punch').checked = false;
         document.getElementById('f_maternity_eligible').checked = false;
         document.getElementById('f_password').value = '123456';
         handleGenderChange();
+        handleEmploymentTypeChange();
         modal.classList.remove('hidden');
     }
 
@@ -675,12 +760,18 @@ require_once __DIR__ . '/includes/sidebar.php';
         document.getElementById('f_shift_end').value = (emp.shift_end || '18:00:00').substring(0, 5);
         document.getElementById('f_role').value = emp.role;
         document.getElementById('f_employment_type').value = emp.employment_type || 'confirmed';
+        if (emp.probation_months == 12) {
+            document.getElementById('f_prob_12').checked = true;
+        } else {
+            document.getElementById('f_prob_6').checked = true;
+        }
         document.getElementById('f_status').value = emp.status || 'active';
         document.getElementById('f_can_approve_leave').checked = emp.can_approve_leave == 1;
         document.getElementById('f_can_approve_manual_punch').checked = emp.can_approve_manual_punch == 1;
         document.getElementById('f_maternity_eligible').checked = emp.maternity_eligible == 1;
         document.getElementById('f_password').value = '';
         handleGenderChange();
+        handleEmploymentTypeChange();
         modal.classList.remove('hidden');
     }
 

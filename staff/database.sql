@@ -44,6 +44,8 @@ CREATE TABLE `employees` (
   `department` VARCHAR(64) NOT NULL DEFAULT 'Sapphire',
   `designation` VARCHAR(64) NOT NULL DEFAULT 'Staff Member',
   `employment_type` ENUM('confirmed', 'probation') NOT NULL DEFAULT 'confirmed' COMMENT 'confirmed (Annual 14, Casual 7, Monthly 4) or probation (Monthly 4 only)',
+  `probation_months` INT NOT NULL DEFAULT 6 COMMENT 'Probation duration in months: 6 or 12',
+  `probation_end_date` DATE NULL COMMENT 'Calculated probation completion date',
   `join_date` DATE NOT NULL DEFAULT (CURRENT_DATE),
   `shift_start` TIME NOT NULL DEFAULT '09:00:00',
   `shift_end` TIME NOT NULL DEFAULT '18:00:00',

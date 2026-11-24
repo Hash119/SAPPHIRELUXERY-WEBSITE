@@ -35,6 +35,11 @@ try {
         if (empty($cols)) {
             $pdo->exec("ALTER TABLE employees ADD COLUMN employment_type ENUM('confirmed', 'probation') NOT NULL DEFAULT 'confirmed' AFTER designation");
         }
+        $colsProb = $pdo->query("SHOW COLUMNS FROM employees LIKE 'probation_months'")->fetchAll();
+        if (empty($colsProb)) {
+            $pdo->exec("ALTER TABLE employees ADD COLUMN probation_months INT NOT NULL DEFAULT 6 AFTER employment_type");
+            $pdo->exec("ALTER TABLE employees ADD COLUMN probation_end_date DATE NULL AFTER probation_months");
+        }
     } catch (Exception $ign) {}
 
     // Auto-migrate leaves table leave_type enum to include 'Monthly'
