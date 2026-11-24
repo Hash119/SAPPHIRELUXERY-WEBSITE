@@ -914,7 +914,12 @@ require_once __DIR__ . '/includes/sidebar.php';
                                         </td>
                                         <td class="py-2.5 px-3 font-sans text-xs text-slate-400">
                                             <?php if ($dRow['is_nopay']): ?>
-                                                <span class="text-rose-400 font-semibold">⚠️ <?= htmlspecialchars($dRow['notes'] ?: 'Unexcused Absence • Adjusted as No-Pay') ?></span>
+                                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                                    <span class="text-rose-400 font-semibold">⚠️ <?= htmlspecialchars($dRow['notes'] ?: 'Unexcused Absence • Adjusted as No-Pay') ?></span>
+                                                    <a href="leaves.php?apply_emp=<?= $emp['id'] ?>&apply_date=<?= urlencode($dRow['date']) ?>" class="print:hidden inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-gold-500/15 hover:bg-gold-500/25 text-gold-300 border border-gold-500/30 transition-colors">
+                                                        <i class="fa-solid fa-calendar-plus text-[9px]"></i> Apply Leave
+                                                    </a>
+                                                </div>
                                             <?php else: ?>
                                                 <?= htmlspecialchars($dRow['notes']) ?>
                                             <?php endif; ?>

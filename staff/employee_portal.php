@@ -229,6 +229,19 @@ if (isset($pdo)) {
         $mlStmt->execute([$empId]);
         $myLeaves = $mlStmt->fetchAll();
 
+        // Map pending leave dates so No-Pay rows can show if a leave request is already pending
+        $pendingLeaveDates = [];
+        foreach ($myLeaves as $lvItem) {
+            if ($lvItem['status'] === 'Pending') {
+                $lc = strtotime($lvItem['start_date']);
+                $le = strtotime($lvItem['end_date']);
+                while ($lc <= $le) {
+                    $pendingLeaveDates[date('Y-m-d', $lc)] = $lvItem['leave_type'];
+                    $lc = strtotime('+1 day', $lc);
+                }
+            }
+        }
+
         // My Manual Punches History
         $mpStmt = $pdo->prepare("
             SELECT m.*, a.name as authorizer_name 
@@ -636,9 +649,19 @@ require_once __DIR__ . '/includes/sidebar.php';
                                         <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 inline-flex items-center gap-1">
                                             <i class="fa-solid fa-triangle-exclamation"></i> No-Pay (Absent)
                                         </span>
-                                        <button type="button" onclick="openPunchModalWithDate('<?= $log['date'] ?>')" class="text-[10px] text-amber-400 hover:text-amber-300 underline block mt-0.5">
-                                            Request Punch &rarr;
-                                        </button>
+                                        <?php if (isset($pendingLeaveDates[$log['date']])): ?>
+                                            <span class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30 ml-1">
+                                                <?= htmlspecialchars($pendingLeaveDates[$log['date']]) ?> Pending
+                                            </span>
+                                        <?php endif; ?>
+                                        <div class="flex flex-wrap items-center gap-2 mt-1">
+                                            <button type="button" onclick="openApplyModalWithDate('<?= $log['date'] ?>')" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-gold-500/15 text-gold-300 hover:bg-gold-500/25 border border-gold-500/30 transition-colors">
+                                                <i class="fa-solid fa-calendar-plus text-[9px]"></i> Apply Leave
+                                            </button>
+                                            <button type="button" onclick="openPunchModalWithDate('<?= $log['date'] ?>')" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 border border-amber-500/30 transition-colors">
+                                                <i class="fa-solid fa-clock-rotate-left text-[9px]"></i> Manual In/Out
+                                            </button>
+                                        </div>
                                     <?php elseif ($isIncomplete): ?>
                                         <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 inline-flex items-center gap-1">
                                             ⚠️ Missed Punch
@@ -913,6 +936,19 @@ require_once __DIR__ . '/includes/sidebar.php';
     const applyModal = document.getElementById('applyModal');
     const punchModal = document.getElementById('punchModal');
     function openApplyModal() { applyModal.classList.remove('hidden'); }
+    function openApplyModalWithDate(date) {
+        const sIn = document.getElementById('portal_start_date');
+        const eIn = document.getElementById('portal_end_date');
+        const fullRadio = document.querySelector('#applyModal input[name="duration"][value="full"]');
+        if (fullRadio) fullRadio.checked = true;
+        if (sIn) sIn.value = date;
+        if (eIn) {
+            eIn.value = date;
+            eIn.readOnly = false;
+            eIn.classList.remove('opacity-60');
+        }
+        openApplyModal();
+    }
     function closeApplyModal() { applyModal.classList.add('hidden'); }
     function openPunchModal() { punchModal.classList.remove('hidden'); }
     function closePunchModal() { punchModal.classList.add('hidden'); }

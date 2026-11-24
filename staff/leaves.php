@@ -545,6 +545,23 @@ require_once __DIR__ . '/includes/sidebar.php';
             eIn.value = sIn.value;
         }
     }
+
+    // Auto-open Apply Leave modal if linked from Reports No-Pay row (?apply_emp=ID&apply_date=YYYY-MM-DD)
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const preEmp = urlParams.get('apply_emp');
+        const preDate = urlParams.get('apply_date');
+        if (preEmp || preDate) {
+            if (preEmp && selEmp) selEmp.value = preEmp;
+            if (preDate) {
+                const sIn = document.getElementById('adm_start_date');
+                const eIn = document.getElementById('adm_end_date');
+                if (sIn) sIn.value = preDate;
+                if (eIn) eIn.value = preDate;
+            }
+            openApplyModal();
+        }
+    });
 </script>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>
