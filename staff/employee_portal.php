@@ -41,9 +41,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
         $end = $_POST['end_date'] ?? $start;
         $reason = trim($_POST['reason'] ?? '');
 
-        // Security check for Maternity
+        $isProbation = ($user['employment_type'] ?? 'confirmed') === 'probation';
+
+        // Security check for Maternity & Probation
         if ($type === 'Maternity' && !$isMaternityEligible) {
             $error = "Maternity leave is only available for eligible female staff.";
+        } elseif ($isProbation && in_array($type, ['Annual', 'Casual'])) {
+            $error = "Employees under probation are only eligible for Monthly Leaves (4 days/month). Annual and Casual leaves cannot be applied until confirmation.";
         } else {
             $sT = strtotime($start);
             $eT = strtotime($end);
@@ -115,6 +119,26 @@ if (isset($pdo)) {
         $totalOtMins = $portalTimesheet['totals']['total_ot_mins'];
         $approvedLeavesMonth = $portalTimesheet['totals']['leave_days'];
         $noPayDays = $portalTimesheet['totals']['nopay_days'];
+
+        // Check probation status
+        $isProbation = ($user['employment_type'] ?? 'confirmed') === 'probation';
+
+        // Monthly leaves used this selected month
+        $monthlyLeavesUsedThisMonth = 0.0;
+        try {
+            $mlmStmt = $pdo->prepare("
+                SELECT COALESCE(SUM(total_days), 0) 
+                FROM leaves 
+                WHERE employee_id = ? 
+                  AND leave_type = 'Monthly' 
+                  AND status = 'Approved' 
+                  AND DATE_FORMAT(start_date, '%Y-%m') = ?
+            ");
+            $mlmStmt->execute([$empId, $selectedMonth]);
+            $monthlyLeavesUsedThisMonth = (float)$mlmStmt->fetchColumn();
+        } catch (Exception $e) {}
+        $monthlyQuota = 4.0;
+        $monthlyRemaining = max(0, $monthlyQuota - $monthlyLeavesUsedThisMonth);
 
         $missingPunchCount = 0;
         $todayStr = date('Y-m-d');
@@ -318,29 +342,76 @@ require_once __DIR__ . '/includes/sidebar.php';
 
     <!-- LEAVE BALANCES BREAKDOWN -->
     <div class="bg-slate-900/70 border border-slate-800/80 rounded-2xl p-6">
-        <h3 class="font-serif font-bold text-base text-white mb-4">My <?= $year ?> Leave Quotas & Balances</h3>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+            <h3 class="font-serif font-bold text-base text-white">My Leave Quotas & Balances</h3>
+            <?php if ($isProbation): ?>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                    <i class="fa-solid fa-clock-rotate-left text-[11px]"></i> Probation Period (4 Monthly Leaves / Month)
+                </span>
+            <?php else: ?>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-sky-500/15 text-sky-300 border border-sky-500/30">
+                    <i class="fa-solid fa-circle-check text-[11px]"></i> Confirmed Employee (14 Annual + 7 Casual + 4 Monthly)
+                </span>
+            <?php endif; ?>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
+            <!-- 1. Monthly Leave -->
+            <div class="p-3.5 rounded-xl bg-gold-950/20 border border-gold-500/30">
+                <span class="text-xs text-gold-400 block font-semibold">Monthly Leave (<?= date('M', strtotime($selectedMonth . '-01')) ?>)</span>
+                <div class="mt-1 flex items-baseline justify-between">
+                    <span class="text-lg font-bold text-gold-300"><?= $monthlyRemaining ?></span>
+                    <span class="text-[11px] text-slate-400">of 4.0 Days</span>
+                </div>
+                <p class="text-[10px] text-slate-400 mt-0.5">Used: <?= $monthlyLeavesUsedThisMonth ?> days</p>
+            </div>
+
+            <!-- 2. Annual Leave -->
             <div class="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
                 <span class="text-xs text-slate-400 block">Annual Leave</span>
-                <div class="mt-1 flex items-baseline justify-between">
-                    <span class="text-lg font-bold text-white"><?= $balance['annual_total'] - $balance['annual_used'] ?></span>
-                    <span class="text-[11px] text-slate-500">of <?= $balance['annual_total'] ?></span>
-                </div>
+                <?php if ($isProbation): ?>
+                    <div class="mt-1 flex items-baseline justify-between">
+                        <span class="text-xs font-semibold text-amber-400">Not Eligible</span>
+                        <span class="text-[10px] text-slate-500 font-mono">Probation</span>
+                    </div>
+                    <p class="text-[10px] text-slate-500 mt-0.5">0 of 0 Days</p>
+                <?php else: ?>
+                    <div class="mt-1 flex items-baseline justify-between">
+                        <span class="text-lg font-bold text-white"><?= $balance['annual_total'] - $balance['annual_used'] ?></span>
+                        <span class="text-[11px] text-slate-500">of <?= $balance['annual_total'] ?></span>
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-0.5">Used: <?= $balance['annual_used'] ?> days</p>
+                <?php endif; ?>
             </div>
+
+            <!-- 3. Casual Leave -->
             <div class="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
                 <span class="text-xs text-slate-400 block">Casual Leave</span>
-                <div class="mt-1 flex items-baseline justify-between">
-                    <span class="text-lg font-bold text-white"><?= $balance['casual_total'] - $balance['casual_used'] ?></span>
-                    <span class="text-[11px] text-slate-500">of <?= $balance['casual_total'] ?></span>
-                </div>
+                <?php if ($isProbation): ?>
+                    <div class="mt-1 flex items-baseline justify-between">
+                        <span class="text-xs font-semibold text-amber-400">Not Eligible</span>
+                        <span class="text-[10px] text-slate-500 font-mono">Probation</span>
+                    </div>
+                    <p class="text-[10px] text-slate-500 mt-0.5">0 of 0 Days</p>
+                <?php else: ?>
+                    <div class="mt-1 flex items-baseline justify-between">
+                        <span class="text-lg font-bold text-white"><?= $balance['casual_total'] - $balance['casual_used'] ?></span>
+                        <span class="text-[11px] text-slate-500">of <?= $balance['casual_total'] ?></span>
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-0.5">Used: <?= $balance['casual_used'] ?> days</p>
+                <?php endif; ?>
             </div>
+
+            <!-- 4. Medical Leave -->
             <div class="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
                 <span class="text-xs text-slate-400 block">Medical Leave</span>
                 <div class="mt-1 flex items-baseline justify-between">
                     <span class="text-lg font-bold text-white"><?= $balance['medical_total'] - $balance['medical_used'] ?></span>
                     <span class="text-[11px] text-slate-500">of <?= $balance['medical_total'] ?></span>
                 </div>
+                <p class="text-[10px] text-slate-400 mt-0.5">Used: <?= $balance['medical_used'] ?> days</p>
             </div>
+
+            <!-- 5. Maternity / Short Leave -->
             <?php if ($isMaternityEligible): ?>
             <div class="p-3.5 rounded-xl bg-purple-950/30 border border-purple-800/40">
                 <span class="text-xs text-purple-300 block font-semibold">Maternity Leave</span>
@@ -348,6 +419,7 @@ require_once __DIR__ . '/includes/sidebar.php';
                     <span class="text-lg font-bold text-purple-200"><?= $balance['maternity_total'] - $balance['maternity_used'] ?></span>
                     <span class="text-[11px] text-purple-400/80">of 84 days</span>
                 </div>
+                <p class="text-[10px] text-purple-400/80 mt-0.5">Eligible female staff</p>
             </div>
             <?php else: ?>
             <div class="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
@@ -356,6 +428,7 @@ require_once __DIR__ . '/includes/sidebar.php';
                     <span class="text-lg font-bold text-slate-400">Available</span>
                     <span class="text-[11px] text-slate-500">2 per month</span>
                 </div>
+                <p class="text-[10px] text-slate-500 mt-0.5">Permission needed</p>
             </div>
             <?php endif; ?>
         </div>
@@ -569,8 +642,14 @@ require_once __DIR__ . '/includes/sidebar.php';
                     Leave Type *
                 </label>
                 <select name="leave_type" id="portal_leave_type" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 focus:border-gold-500 focus:outline-none">
-                    <option value="Casual">Casual Leave (<?= $balance['casual_total'] - $balance['casual_used'] ?> remaining)</option>
-                    <option value="Annual">Annual Leave (<?= $balance['annual_total'] - $balance['annual_used'] ?> remaining)</option>
+                    <option value="Monthly" class="text-gold-300 font-semibold">Monthly Leave (<?= $monthlyRemaining ?> of 4 days remaining for <?= date('M Y') ?>)</option>
+                    <?php if ($isProbation): ?>
+                        <option value="Casual" disabled class="text-slate-600">Casual Leave (Not eligible during probation)</option>
+                        <option value="Annual" disabled class="text-slate-600">Annual Leave (Not eligible during probation)</option>
+                    <?php else: ?>
+                        <option value="Casual">Casual Leave (<?= $balance['casual_total'] - $balance['casual_used'] ?> remaining of 7)</option>
+                        <option value="Annual">Annual Leave (<?= $balance['annual_total'] - $balance['annual_used'] ?> remaining of 14)</option>
+                    <?php endif; ?>
                     <option value="Medical">Medical / Sick Leave (<?= $balance['medical_total'] - $balance['medical_used'] ?> remaining)</option>
                     <?php if ($isMaternityEligible): ?>
                         <option value="Maternity" class="text-purple-300 font-semibold">

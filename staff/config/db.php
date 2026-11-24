@@ -29,6 +29,28 @@ try {
         }
     } catch (Exception $ign) {}
 
+    // Auto-migrate employment_type (confirmed / probation)
+    try {
+        $cols = $pdo->query("SHOW COLUMNS FROM employees LIKE 'employment_type'")->fetchAll();
+        if (empty($cols)) {
+            $pdo->exec("ALTER TABLE employees ADD COLUMN employment_type ENUM('confirmed', 'probation') NOT NULL DEFAULT 'confirmed' AFTER designation");
+        }
+    } catch (Exception $ign) {}
+
+    // Auto-migrate leaves table leave_type enum to include 'Monthly'
+    try {
+        $pdo->exec("ALTER TABLE leaves MODIFY COLUMN leave_type ENUM('Monthly', 'Annual', 'Casual', 'Medical', 'Maternity', 'Half Day', 'Short Leave', 'No Pay') NOT NULL");
+    } catch (Exception $ign) {}
+
+    // Auto-migrate leave_balances table to include monthly_quota & monthly_used
+    try {
+        $cols = $pdo->query("SHOW COLUMNS FROM leave_balances LIKE 'monthly_quota'")->fetchAll();
+        if (empty($cols)) {
+            $pdo->exec("ALTER TABLE leave_balances ADD COLUMN monthly_quota DECIMAL(4,1) NOT NULL DEFAULT 4.0 AFTER casual_used");
+            $pdo->exec("ALTER TABLE leave_balances ADD COLUMN monthly_used DECIMAL(4,1) NOT NULL DEFAULT 0.0 AFTER monthly_quota");
+        }
+    } catch (Exception $ign) {}
+
     // Ensure Sri Lanka statutory & Poya holidays table exists
     require_once __DIR__ . '/../includes/holidays.php';
     ensure_holidays_table($pdo);

@@ -41,6 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
                     'Casual' => 'casual_used',
                     'Medical' => 'medical_used',
                     'Maternity' => 'maternity_used',
+                    'Monthly' => 'monthly_used',
                     default => null
                 };
 
@@ -109,6 +110,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
         }
 
         try {
+            // Check probation restrictions
+            $empData = $pdo->query("SELECT employment_type, name FROM employees WHERE id = {$empId}")->fetch();
+            if ($empData && ($empData['employment_type'] ?? 'confirmed') === 'probation' && in_array($type, ['Annual', 'Casual'])) {
+                throw new Exception("{$empData['name']} is currently on Probation. Probation employees are only entitled to Monthly Leaves (4 days/month). Annual and Casual leaves cannot be applied until confirmation.");
+            }
+
+            if ($type === 'Monthly') {
+                $monthStr = date('Y-m', $startT);
+                $usedInMonth = (float)$pdo->query("SELECT COALESCE(SUM(total_days), 0) FROM leaves WHERE employee_id = {$empId} AND leave_type = 'Monthly' AND status != 'Rejected' AND DATE_FORMAT(start_date, '%Y-%m') = '{$monthStr}'")->fetchColumn();
+                if ($usedInMonth + $days > 4) {
+                    $reason .= " [Note: Exceeds 4 monthly leaves quota: " . ($usedInMonth + $days) . "/4 for " . date('M Y', $startT) . "]";
+                }
+            }
+
             $ins = $pdo->prepare("
                 INSERT INTO leaves (employee_id, leave_type, start_date, end_date, total_days, reason, status)
                 VALUES (?, ?, ?, ?, ?, ?, 'Pending')
@@ -354,8 +369,9 @@ require_once __DIR__ . '/includes/sidebar.php';
                     Leave Type *
                 </label>
                 <select name="leave_type" id="sel_leave_type" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 focus:border-gold-500 focus:outline-none">
-                    <option value="Casual">Casual Leave</option>
-                    <option value="Annual">Annual Leave</option>
+                    <option value="Monthly" class="text-gold-300 font-semibold">Monthly Leave (4 Days / Month)</option>
+                    <option value="Casual">Casual Leave (7 Days - Confirmed Staff)</option>
+                    <option value="Annual">Annual Leave (14 Days - Confirmed Staff)</option>
                     <option value="Medical">Medical / Sick Leave</option>
                     <option value="Maternity" id="opt_maternity" class="text-purple-300 font-semibold">Maternity Leave (84 Days - Ladies Only)</option>
                     <option value="Half Day">Half Day</option>

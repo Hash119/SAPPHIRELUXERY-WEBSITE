@@ -104,6 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
         $maternityEligible = ($gender === 'Female' && isset($_POST['maternity_eligible'])) ? 1 : 0;
         $role = $_POST['role'] ?? 'employee';
         $status = $_POST['status'] ?? 'active';
+        $employmentType = ($_POST['employment_type'] ?? 'confirmed') === 'probation' ? 'probation' : 'confirmed';
         $canApproveLeave = isset($_POST['can_approve_leave']) ? 1 : 0;
         $canApprovePunch = isset($_POST['can_approve_manual_punch']) ? 1 : 0;
         $password = trim($_POST['password'] ?? '');
@@ -119,30 +120,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
                 try {
                     $stmt = $pdo->prepare("
                         INSERT INTO employees 
-                        (machine_user_id, emp_no, name, calling_name, email, phone, gender, department, designation, join_date, shift_start, shift_end, grace_period_mins, maternity_eligible, role, can_approve_leave, can_approve_manual_punch, password, plain_token, status)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        (machine_user_id, emp_no, name, calling_name, email, phone, gender, department, designation, employment_type, join_date, shift_start, shift_end, grace_period_mins, maternity_eligible, role, can_approve_leave, can_approve_manual_punch, password, plain_token, status)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ");
                     $stmt->execute([
-                        $machineId, $empNo, $name, $callingName, $email, $phone, $gender, $department, $designation, $joinDate, $shiftStart, $shiftEnd, $graceMins, $maternityEligible, $role, $canApproveLeave, $canApprovePunch, $hash, $plainPw, $status
+                        $machineId, $empNo, $name, $callingName, $email, $phone, $gender, $department, $designation, $employmentType, $joinDate, $shiftStart, $shiftEnd, $graceMins, $maternityEligible, $role, $canApproveLeave, $canApprovePunch, $hash, $plainPw, $status
                     ]);
                 } catch (Exception $eCol) {
                     $stmt = $pdo->prepare("
                         INSERT INTO employees 
-                        (machine_user_id, emp_no, name, calling_name, email, phone, gender, department, designation, join_date, shift_start, shift_end, grace_period_mins, maternity_eligible, role, can_approve_leave, can_approve_manual_punch, password, status)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        (machine_user_id, emp_no, name, calling_name, email, phone, gender, department, designation, employment_type, join_date, shift_start, shift_end, grace_period_mins, maternity_eligible, role, can_approve_leave, can_approve_manual_punch, password, status)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ");
                     $stmt->execute([
-                        $machineId, $empNo, $name, $callingName, $email, $phone, $gender, $department, $designation, $joinDate, $shiftStart, $shiftEnd, $graceMins, $maternityEligible, $role, $canApproveLeave, $canApprovePunch, $hash, $status
+                        $machineId, $empNo, $name, $callingName, $email, $phone, $gender, $department, $designation, $employmentType, $joinDate, $shiftStart, $shiftEnd, $graceMins, $maternityEligible, $role, $canApproveLeave, $canApprovePunch, $hash, $status
                     ]);
                 }
                 $newId = $pdo->lastInsertId();
 
-                // Initialize leave balances
+                // Initialize leave balances (Confirmed: 14 Annual + 7 Casual | Probation: 0 Annual + 0 Casual | Both: 4 Monthly Quota)
+                $annualDays = ($employmentType === 'probation') ? 0.0 : 14.0;
+                $casualDays = ($employmentType === 'probation') ? 0.0 : 7.0;
                 $matDays = $maternityEligible ? 84.0 : 0.0;
-                $balStmt = $pdo->prepare("INSERT INTO leave_balances (employee_id, year, annual_total, casual_total, medical_total, maternity_total) VALUES (?, ?, 14.0, 7.0, 14.0, ?)");
-                $balStmt->execute([$newId, (int)date('Y'), $matDays]);
+                $balStmt = $pdo->prepare("
+                    INSERT INTO leave_balances 
+                    (employee_id, year, annual_total, casual_total, monthly_quota, medical_total, maternity_total) 
+                    VALUES (?, ?, ?, ?, 4.0, 14.0, ?)
+                    ON DUPLICATE KEY UPDATE annual_total = VALUES(annual_total), casual_total = VALUES(casual_total), monthly_quota = 4.0
+                ");
+                $balStmt->execute([$newId, (int)date('Y'), $annualDays, $casualDays, $matDays]);
 
-                $message = "Employee {$name} (#{$machineId}) registered successfully!";
+                $message = "Employee {$name} (#{$machineId}) registered successfully as " . ucfirst($employmentType) . "!";
             } catch (Exception $e) {
                 $error = "Failed to add employee: " . $e->getMessage();
             }
@@ -151,12 +159,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
             try {
                 $sql = "UPDATE employees SET 
                         machine_user_id = ?, emp_no = ?, name = ?, calling_name = ?, email = ?, phone = ?, 
-                        gender = ?, department = ?, designation = ?, shift_start = ?, shift_end = ?, 
+                        gender = ?, department = ?, designation = ?, employment_type = ?, shift_start = ?, shift_end = ?, 
                         grace_period_mins = ?, maternity_eligible = ?, role = ?, status = ?, can_approve_leave = ?, 
                         can_approve_manual_punch = ?";
                 $params = [
                     $machineId, $empNo, $name, $callingName, $email, $phone, 
-                    $gender, $department, $designation, $shiftStart, $shiftEnd, 
+                    $gender, $department, $designation, $employmentType, $shiftStart, $shiftEnd, 
                     $graceMins, $maternityEligible, $role, $status, $canApproveLeave, $canApprovePunch
                 ];
 
@@ -171,11 +179,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
                 $stmt = $pdo->prepare($sql);
                 $stmt->execute($params);
 
-                // Update maternity quota in balance
-                $balUpdate = $pdo->prepare("UPDATE leave_balances SET maternity_total = ? WHERE employee_id = ? AND year = ?");
-                $balUpdate->execute([$maternityEligible ? 84.0 : 0.0, $empId, (int)date('Y')]);
+                // Update leave balances according to employment type & maternity
+                $annualDays = ($employmentType === 'probation') ? 0.0 : 14.0;
+                $casualDays = ($employmentType === 'probation') ? 0.0 : 7.0;
+                $balUpdate = $pdo->prepare("
+                    UPDATE leave_balances 
+                    SET annual_total = ?, casual_total = ?, monthly_quota = 4.0, maternity_total = ? 
+                    WHERE employee_id = ? AND year = ?
+                ");
+                $balUpdate->execute([$annualDays, $casualDays, $maternityEligible ? 84.0 : 0.0, $empId, (int)date('Y')]);
 
-                $message = "Employee details updated successfully!";
+                $message = "Employee details updated successfully (" . ucfirst($employmentType) . ")!";
             } catch (Exception $e) {
                 $error = "Failed to update employee: " . $e->getMessage();
             }
@@ -293,9 +307,20 @@ require_once __DIR__ . '/includes/sidebar.php';
                                 </td>
                                 <td class="py-3.5 px-4">
                                     <div class="text-slate-300"><?= htmlspecialchars($emp['department']) ?></div>
-                                    <span class="inline-block mt-0.5 px-1.5 py-0.2 rounded text-[10px] uppercase font-semibold <?= $emp['role'] === 'admin' ? 'bg-amber-500/20 text-amber-300' : ($emp['role'] === 'manager' || $emp['role'] === 'supervisor' ? 'bg-indigo-500/20 text-indigo-300' : 'bg-slate-800 text-slate-400') ?>">
-                                        <?= htmlspecialchars($emp['role']) ?>
-                                    </span>
+                                    <div class="flex items-center gap-1.5 flex-wrap mt-0.5">
+                                        <span class="inline-block px-1.5 py-0.2 rounded text-[10px] uppercase font-semibold <?= $emp['role'] === 'admin' ? 'bg-amber-500/20 text-amber-300' : ($emp['role'] === 'manager' || $emp['role'] === 'supervisor' ? 'bg-indigo-500/20 text-indigo-300' : 'bg-slate-800 text-slate-400') ?>">
+                                            <?= htmlspecialchars($emp['role']) ?>
+                                        </span>
+                                        <?php if (($emp['employment_type'] ?? 'confirmed') === 'probation'): ?>
+                                            <span class="inline-block px-1.5 py-0.2 rounded text-[10px] font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30" title="Probation: 4 Monthly Leaves only (No Annual/Casual)">
+                                                <i class="fa-solid fa-clock-rotate-left text-[9px]"></i> Probation
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="inline-block px-1.5 py-0.2 rounded text-[10px] font-semibold bg-sky-500/15 text-sky-300 border border-sky-500/30" title="Confirmed: 14 Annual + 7 Casual + 4 Monthly Leaves">
+                                                <i class="fa-solid fa-circle-check text-[9px]"></i> Confirmed
+                                            </span>
+                                        <?php endif; ?>
+                                    </div>
                                 </td>
                                 <td class="py-3.5 px-4 font-mono text-[11px] text-slate-400">
                                     <?= substr($emp['shift_start'], 0, 5) ?> - <?= substr($emp['shift_end'], 0, 5) ?>
@@ -526,6 +551,17 @@ require_once __DIR__ . '/includes/sidebar.php';
                     </select>
                 </div>
 
+                <!-- Employment Status (Confirmed vs Probation) -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                        Employment Status (Leave Quota)
+                    </label>
+                    <select name="employment_type" id="f_employment_type" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 focus:border-gold-500 focus:outline-none">
+                        <option value="confirmed">Confirmed (Annual 14 + Casual 7 + Monthly 4)</option>
+                        <option value="probation">Probation (Monthly 4 Only - No Annual/Casual)</option>
+                    </select>
+                </div>
+
                 <!-- Status (Active / Inactive) -->
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
@@ -613,6 +649,7 @@ require_once __DIR__ . '/includes/sidebar.php';
         document.getElementById('f_designation').value = '';
         document.getElementById('f_gender').value = 'Female';
         document.getElementById('f_role').value = 'employee';
+        document.getElementById('f_employment_type').value = 'confirmed';
         document.getElementById('f_status').value = 'active';
         document.getElementById('f_can_approve_leave').checked = false;
         document.getElementById('f_can_approve_manual_punch').checked = false;
@@ -637,6 +674,7 @@ require_once __DIR__ . '/includes/sidebar.php';
         document.getElementById('f_shift_start').value = (emp.shift_start || '09:00:00').substring(0, 5);
         document.getElementById('f_shift_end').value = (emp.shift_end || '18:00:00').substring(0, 5);
         document.getElementById('f_role').value = emp.role;
+        document.getElementById('f_employment_type').value = emp.employment_type || 'confirmed';
         document.getElementById('f_status').value = emp.status || 'active';
         document.getElementById('f_can_approve_leave').checked = emp.can_approve_leave == 1;
         document.getElementById('f_can_approve_manual_punch').checked = emp.can_approve_manual_punch == 1;

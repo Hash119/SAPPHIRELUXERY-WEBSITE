@@ -43,6 +43,7 @@ CREATE TABLE `employees` (
   `gender` ENUM('Male', 'Female', 'Other') NOT NULL DEFAULT 'Female',
   `department` VARCHAR(64) NOT NULL DEFAULT 'Sapphire',
   `designation` VARCHAR(64) NOT NULL DEFAULT 'Staff Member',
+  `employment_type` ENUM('confirmed', 'probation') NOT NULL DEFAULT 'confirmed' COMMENT 'confirmed (Annual 14, Casual 7, Monthly 4) or probation (Monthly 4 only)',
   `join_date` DATE NOT NULL DEFAULT (CURRENT_DATE),
   `shift_start` TIME NOT NULL DEFAULT '09:00:00',
   `shift_end` TIME NOT NULL DEFAULT '18:00:00',
@@ -84,7 +85,7 @@ CREATE TABLE `attendance_logs` (
 CREATE TABLE `leaves` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `employee_id` INT NOT NULL,
-  `leave_type` ENUM('Annual', 'Casual', 'Medical', 'Maternity', 'Half Day', 'Short Leave', 'No Pay') NOT NULL,
+  `leave_type` ENUM('Monthly', 'Annual', 'Casual', 'Medical', 'Maternity', 'Half Day', 'Short Leave', 'No Pay') NOT NULL,
   `start_date` DATE NOT NULL,
   `end_date` DATE NOT NULL,
   `total_days` DECIMAL(4,1) NOT NULL DEFAULT 1.0,
@@ -107,6 +108,8 @@ CREATE TABLE `leave_balances` (
   `annual_used` DECIMAL(4,1) NOT NULL DEFAULT 0.0,
   `casual_total` DECIMAL(4,1) NOT NULL DEFAULT 7.0,
   `casual_used` DECIMAL(4,1) NOT NULL DEFAULT 0.0,
+  `monthly_quota` DECIMAL(4,1) NOT NULL DEFAULT 4.0 COMMENT 'Allowed monthly leaves per month (default 4)',
+  `monthly_used` DECIMAL(4,1) NOT NULL DEFAULT 0.0,
   `medical_total` DECIMAL(4,1) NOT NULL DEFAULT 14.0,
   `medical_used` DECIMAL(4,1) NOT NULL DEFAULT 0.0,
   `maternity_total` DECIMAL(4,1) NOT NULL DEFAULT 84.0,
@@ -184,8 +187,15 @@ INSERT INTO `employees` (`machine_user_id`, `emp_no`, `name`, `calling_name`, `g
 (22, '0022', 'KISHANI', 'Kishani', 'Female', 'Sapphire', 'Salon Assistant', 0, 'employee', 0, 0, '$2y$10$zYf7OQ7R97sE6mF6f02Z8e9D47zDq3A5q3j2g/xXjN/mBsm2w1PzK', '123456', 'active');
 
 -- Initialize Leave Balances for 2026 for all employees
-INSERT INTO `leave_balances` (`employee_id`, `year`, `annual_total`, `casual_total`, `medical_total`, `maternity_total`)
-SELECT `id`, 2026, 14.0, 7.0, 14.0, (CASE WHEN `maternity_eligible` = 1 THEN 84.0 ELSE 0.0 END)
+-- Confirmed employees get 14 Annual, 7 Casual, 4 Monthly quota
+-- Probation employees get 0 Annual, 0 Casual, 4 Monthly quota
+INSERT INTO `leave_balances` (`employee_id`, `year`, `annual_total`, `casual_total`, `monthly_quota`, `medical_total`, `maternity_total`)
+SELECT `id`, 2026, 
+  (CASE WHEN `employment_type` = 'probation' THEN 0.0 ELSE 14.0 END),
+  (CASE WHEN `employment_type` = 'probation' THEN 0.0 ELSE 7.0 END),
+  4.0,
+  14.0, 
+  (CASE WHEN `maternity_eligible` = 1 THEN 84.0 ELSE 0.0 END)
 FROM `employees`;
 
 -- 3. Seed Sri Lanka Statutory & Full Moon Poya & Mercantile Holidays (2025 - 2026)
