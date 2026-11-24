@@ -46,9 +46,9 @@ if (isset($pdo)) {
         $pendingLeaves = (int)$pdo->query("SELECT COUNT(*) FROM leaves WHERE status = 'Pending'")->fetchColumn();
         $pendingPunches = (int)$pdo->query("SELECT COUNT(*) FROM manual_punches WHERE status = 'Pending'")->fetchColumn();
 
-        // 2. Fetch Today's Live Attendance Table
+        // 2. Fetch Today's Live Attendance Table + Today's Approved Leaves
         $todayLogsStmt = $pdo->prepare("
-            SELECT e.id as emp_id, e.machine_user_id, e.name, e.calling_name, e.department, e.gender,
+            SELECT e.id as emp_id, e.machine_user_id, e.name, e.calling_name, e.department, e.designation, e.gender, e.role, e.shift_start, e.shift_end,
                    a.check_in, a.check_out, a.work_hours, a.late_minutes, a.early_leave_minutes, a.overtime_minutes,
                    COALESCE(a.status, 'Absent') as att_status, a.source
             FROM employees e
@@ -58,6 +58,31 @@ if (isset($pdo)) {
         ");
         $todayLogsStmt->execute([$today]);
         $todayLogs = $todayLogsStmt->fetchAll();
+
+        // Fetch approved leaves covering today
+        $todayLeavesMap = [];
+        try {
+            $tlStmt = $pdo->prepare("SELECT employee_id, leave_type, total_days FROM leaves WHERE status = 'Approved' AND ? BETWEEN start_date AND end_date");
+            $tlStmt->execute([$today]);
+            foreach ($tlStmt->fetchAll() as $tlRow) {
+                $todayLeavesMap[$tlRow['employee_id']] = $tlRow;
+            }
+        } catch (Exception $e) {}
+
+        // Split into Today Present vs Today Absent / Not In Yet (excluding system admin #999 from absent list)
+        $todayPresentList = [];
+        $todayAbsentList = [];
+        foreach ($todayLogs as $row) {
+            $hasPunch = (!empty($row['check_in']) && $row['check_in'] !== '00:00:00') || (!empty($row['check_out']) && $row['check_out'] !== '00:00:00');
+            if ($hasPunch || in_array($row['att_status'], ['Present', 'Late', 'Half Day'])) {
+                $todayPresentList[] = $row;
+            } elseif ((int)$row['machine_user_id'] !== 999) {
+                $row['approved_leave'] = $todayLeavesMap[$row['emp_id']] ?? null;
+                $todayAbsentList[] = $row;
+            }
+        }
+        $todayPresent = count($todayPresentList);
+        $todayAbsent  = count($todayAbsentList);
 
         // 3. Fetch Recent Leave Requests
         $recentLeavesStmt = $pdo->query("
@@ -191,6 +216,117 @@ require_once __DIR__ . '/includes/sidebar.php';
     </div>
 </div>
 
+<!-- TODAY'S LIVE ROLL CALL: 2 COMPACT TABS (PRESENT VS ABSENT) -->
+<div class="bg-slate-900/70 border border-slate-800/80 rounded-2xl overflow-hidden mb-8 shadow-xl">
+    <div class="p-4 sm:p-5 border-b border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+            <h3 class="font-serif font-bold text-base text-white flex items-center gap-2">
+                <i class="fa-solid fa-clipboard-user text-gold-400"></i>
+                <span>Today's Live Staff Status (<?= date('d M Y') ?>)</span>
+            </h3>
+            <p class="text-[11px] text-slate-400 mt-0.5">Switch tabs to quickly view who is present today and who is absent / on leave</p>
+        </div>
+
+        <!-- Compact 2-Tab Switcher -->
+        <div class="inline-flex p-1 bg-slate-950 border border-slate-800 rounded-xl self-start sm:self-auto">
+            <button type="button" id="tabBtnPresent" onclick="switchTodayTab('present')"
+                class="px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                <i class="fa-solid fa-user-check text-[11px]"></i>
+                <span>Present Today</span>
+                <span class="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-emerald-500 text-slate-950"><?= count($todayPresentList ?? []) ?></span>
+            </button>
+            <button type="button" id="tabBtnAbsent" onclick="switchTodayTab('absent')"
+                class="px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 text-slate-400 hover:text-rose-300 border border-transparent">
+                <i class="fa-solid fa-user-xmark text-[11px]"></i>
+                <span>Absent / Not In</span>
+                <span class="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-rose-500/20 text-rose-300"><?= count($todayAbsentList ?? []) ?></span>
+            </button>
+        </div>
+    </div>
+
+    <!-- TAB PANEL 1: PRESENT TODAY -->
+    <div id="tabPanelPresent" class="p-4">
+        <?php if (empty($todayPresentList)): ?>
+            <div class="py-6 text-center text-xs text-slate-500">
+                <i class="fa-regular fa-clock text-lg mb-1.5 block text-slate-600"></i>
+                No staff punches recorded yet for today (<?= date('d M Y') ?>). Upload today's USB Excel report to refresh.
+            </div>
+        <?php else: ?>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                <?php foreach ($todayPresentList as $pRow): ?>
+                    <div class="p-3 rounded-xl bg-slate-950/70 border border-emerald-500/20 hover:border-emerald-500/40 transition-colors flex items-center justify-between gap-2">
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-[10px] font-mono font-bold text-gold-400">#<?= htmlspecialchars($pRow['machine_user_id']) ?></span>
+                                <span class="text-xs font-semibold text-white truncate"><?= htmlspecialchars($pRow['name']) ?></span>
+                            </div>
+                            <div class="text-[10px] text-slate-400 mt-0.5 font-mono">
+                                In: <span class="text-emerald-400 font-semibold"><?= format_time_12h($pRow['check_in']) ?></span>
+                                <?php if (!empty($pRow['check_out']) && $pRow['check_out'] !== '00:00:00'): ?>
+                                    &bull; Out: <span class="text-slate-200"><?= format_time_12h($pRow['check_out']) ?></span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <div class="shrink-0 text-right">
+                            <?php if (($pRow['late_minutes'] ?? 0) > 0): ?>
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30 block">
+                                    Late +<?= format_minutes($pRow['late_minutes']) ?>
+                                </span>
+                            <?php else: ?>
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 block">
+                                    On Time
+                                </span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </div>
+
+    <!-- TAB PANEL 2: ABSENT / NOT IN TODAY -->
+    <div id="tabPanelAbsent" class="p-4 hidden">
+        <?php if (empty($todayAbsentList)): ?>
+            <div class="py-6 text-center text-xs text-emerald-400">
+                <i class="fa-solid fa-circle-check text-lg mb-1.5 block"></i>
+                100% Attendance! All active staff members are present today.
+            </div>
+        <?php else: ?>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                <?php foreach ($todayAbsentList as $aRow): ?>
+                    <?php $hasLeave = !empty($aRow['approved_leave']) || $aRow['att_status'] === 'On Leave'; ?>
+                    <div class="p-3 rounded-xl bg-slate-950/70 border <?= $hasLeave ? 'border-purple-500/25' : 'border-rose-500/25' ?> flex items-center justify-between gap-2">
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-[10px] font-mono font-bold text-slate-400">#<?= htmlspecialchars($aRow['machine_user_id']) ?></span>
+                                <span class="text-xs font-semibold text-white truncate"><?= htmlspecialchars($aRow['name']) ?></span>
+                            </div>
+                            <div class="text-[10px] text-slate-400 mt-0.5 truncate">
+                                <?= htmlspecialchars($aRow['designation'] ?: $aRow['department']) ?> &bull; Shift <?= substr($aRow['shift_start'] ?? '09:00', 0, 5) ?>
+                            </div>
+                        </div>
+                        <div class="shrink-0">
+                            <?php if (!empty($aRow['approved_leave'])): ?>
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-500/15 text-purple-300 border border-purple-500/30">
+                                    <?= htmlspecialchars($aRow['approved_leave']['leave_type']) ?> Leave
+                                </span>
+                            <?php elseif ($aRow['att_status'] === 'On Leave'): ?>
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-500/15 text-purple-300 border border-purple-500/30">
+                                    On Leave
+                                </span>
+                            <?php else: ?>
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/15 text-rose-300 border border-rose-500/30">
+                                    Absent
+                                </span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </div>
+</div>
+
 <!-- Charts & Highlights Row -->
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
     <!-- Attendance Trend Chart (2 Cols) -->
@@ -321,8 +457,27 @@ require_once __DIR__ . '/includes/sidebar.php';
     </div>
 </div>
 
-<!-- Chart Script -->
+<!-- Chart & Tab Switcher Script -->
 <script>
+    function switchTodayTab(tab) {
+        const pPanel = document.getElementById('tabPanelPresent');
+        const aPanel = document.getElementById('tabPanelAbsent');
+        const pBtn = document.getElementById('tabBtnPresent');
+        const aBtn = document.getElementById('tabBtnAbsent');
+
+        if (tab === 'present') {
+            pPanel.classList.remove('hidden');
+            aPanel.classList.add('hidden');
+            pBtn.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+            aBtn.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 text-slate-400 hover:text-rose-300 border border-transparent';
+        } else {
+            aPanel.classList.remove('hidden');
+            pPanel.classList.add('hidden');
+            aBtn.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 bg-rose-500/20 text-rose-300 border border-rose-500/40';
+            pBtn.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 text-slate-400 hover:text-emerald-300 border border-transparent';
+        }
+    }
+
     const ctx = document.getElementById('trendChart').getContext('2d');
     new Chart(ctx, {
         type: 'bar',

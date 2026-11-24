@@ -427,7 +427,6 @@ require_once __DIR__ . '/includes/sidebar.php';
                     <option value="Monthly" class="text-gold-300 font-semibold">Monthly Leave (4 Days / Month)</option>
                     <option value="Casual">Casual Leave (7 Days - Confirmed Staff)</option>
                     <option value="Annual">Annual Leave (14 Days - Confirmed Staff)</option>
-                    <option value="Medical">Medical / Sick Leave (7 Days)</option>
                     <option value="Maternity" id="opt_maternity" class="text-purple-300 font-semibold">Maternity Leave (84 Days - Ladies Only)</option>
                     <option value="Half Day">Half Day</option>
                     <option value="Short Leave">Short Leave</option>

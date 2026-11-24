@@ -91,6 +91,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
 
         if ($type === 'Maternity' && !$isMaternityEligible) {
             $error = "Maternity leave is only available for eligible female staff.";
+        } elseif ($type === 'Medical') {
+            $error = "Sick / Medical leave entitlement is not available. Please apply under Monthly, Casual, or Annual leave.";
         } elseif ($type === 'Casual' && $applyAccrual['casual_total'] <= 0) {
             $error = "Casual leaves are not available yet. They unlock after your 1-year appointment date (" . ($applyAccrual['unlock_date'] ?? 'confirmation') . ").";
         } elseif ($type === 'Casual' && $days > $casualRemCheck) {
@@ -446,7 +448,7 @@ require_once __DIR__ . '/includes/sidebar.php';
                 </span>
             <?php endif; ?>
         </div>
-        <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <!-- 1. Monthly Leave -->
             <div class="p-3.5 rounded-xl bg-gold-950/20 border border-gold-500/30">
                 <span class="text-xs text-gold-400 block font-semibold">Monthly Leave (<?= date('M', strtotime($selectedMonth . '-01')) ?>)</span>
@@ -502,18 +504,7 @@ require_once __DIR__ . '/includes/sidebar.php';
                 <?php endif; ?>
             </div>
 
-            <!-- 4. Medical Leave -->
-            <div class="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
-                <span class="text-xs text-slate-400 block">Medical Leave</span>
-                <?php $medRemDisp = max(0, (float)$balance['medical_total'] - (float)$balance['medical_used']); ?>
-                <div class="mt-1 flex items-baseline justify-between">
-                    <span class="text-lg font-bold text-white"><?= rtrim(rtrim(number_format($medRemDisp, 1), '0'), '.') ?></span>
-                    <span class="text-[11px] text-slate-500">of <?= rtrim(rtrim(number_format((float)$balance['medical_total'], 1), '0'), '.') ?></span>
-                </div>
-                <p class="text-[10px] text-slate-400 mt-0.5">Used: <?= rtrim(rtrim(number_format((float)$balance['medical_used'], 1), '0'), '.') ?> days</p>
-            </div>
-
-            <!-- 5. Maternity / Short Leave -->
+            <!-- 4. Maternity / Short Leave -->
             <?php if ($isMaternityEligible): ?>
             <div class="p-3.5 rounded-xl bg-purple-950/30 border border-purple-800/40">
                 <span class="text-xs text-purple-300 block font-semibold">Maternity Leave</span>
@@ -788,8 +779,6 @@ require_once __DIR__ . '/includes/sidebar.php';
                     <?php else: ?>
                         <option value="Annual" disabled class="text-slate-600">Annual Leave – Not yet eligible (Joining Year)</option>
                     <?php endif; ?>
-                    <?php $medRemOpt = max(0, (float)$balance['medical_total'] - (float)$balance['medical_used']); ?>
-                    <option value="Medical">Medical / Sick Leave (<?= rtrim(rtrim(number_format($medRemOpt, 1), '0'), '.') ?> remaining of <?= rtrim(rtrim(number_format((float)$balance['medical_total'], 1), '0'), '.') ?>)</option>
                     <?php if ($isMaternityEligible): ?>
                         <option value="Maternity" class="text-purple-300 font-semibold">
                             Maternity Leave (<?= $balance['maternity_total'] - $balance['maternity_used'] ?> days quota)

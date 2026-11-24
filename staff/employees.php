@@ -760,13 +760,13 @@ require_once __DIR__ . '/includes/sidebar.php';
                             <i class="fa-solid fa-sliders"></i> Customize Leave Entitlement (Admin Override)
                         </span>
                         <p class="text-[11px] text-slate-400 mt-0.5">
-                            Optional: Turn ON to manually set custom Annual, Casual, Monthly &amp; Medical leave quotas for this employee instead of automatic probation/accrual rules.
+                            Optional: Turn ON to manually set custom Annual, Casual &amp; Monthly leave quotas for this employee instead of automatic probation/accrual rules.
                         </p>
                     </div>
                 </label>
 
                 <div id="customLeaveFields" class="hidden pt-2 border-t border-indigo-500/20 space-y-3">
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div class="grid grid-cols-3 gap-3">
                         <div>
                             <label class="block text-[10px] font-semibold uppercase tracking-wider text-indigo-300 mb-1">Annual / Yr</label>
                             <input type="number" step="0.5" min="0" max="60" name="custom_annual_quota" id="f_custom_annual" value="14"
@@ -782,12 +782,8 @@ require_once __DIR__ . '/includes/sidebar.php';
                             <input type="number" step="0.5" min="0" max="15" name="custom_monthly_quota" id="f_custom_monthly" value="4"
                                 class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-white font-mono focus:border-indigo-400 focus:outline-none">
                         </div>
-                        <div>
-                            <label class="block text-[10px] font-semibold uppercase tracking-wider text-indigo-300 mb-1">Medical / Yr</label>
-                            <input type="number" step="0.5" min="0" max="60" name="custom_medical_quota" id="f_custom_medical" value="7"
-                                class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-white font-mono focus:border-indigo-400 focus:outline-none">
-                        </div>
                     </div>
+                    <input type="hidden" name="custom_medical_quota" id="f_custom_medical" value="0">
                 </div>
 
                 <!-- Optional: Adjust Already-Used Leaves This Year (Visible when editing) -->
@@ -796,7 +792,7 @@ require_once __DIR__ . '/includes/sidebar.php';
                         <input type="checkbox" name="adjust_used_leaves" id="f_adjust_used_leaves" value="1" onchange="handleAdjustUsedToggle()" class="w-3.5 h-3.5 rounded text-amber-500 bg-slate-900 border-slate-700">
                         <span class="text-[11px] font-semibold text-amber-300">Adjust <?= date('Y') ?> Leaves Already Taken (Opening Balance)</span>
                     </label>
-                    <div id="adjustUsedFields" class="hidden grid grid-cols-3 gap-3">
+                    <div id="adjustUsedFields" class="hidden grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-[10px] text-slate-400 mb-1">Annual Used</label>
                             <input type="number" step="0.5" min="0" max="60" name="adj_annual_used" id="f_adj_annual_used" value="0"
@@ -807,11 +803,7 @@ require_once __DIR__ . '/includes/sidebar.php';
                             <input type="number" step="0.5" min="0" max="30" name="adj_casual_used" id="f_adj_casual_used" value="0"
                                 class="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-xs text-amber-300 font-mono">
                         </div>
-                        <div>
-                            <label class="block text-[10px] text-slate-400 mb-1">Medical Used</label>
-                            <input type="number" step="0.5" min="0" max="60" name="adj_medical_used" id="f_adj_medical_used" value="0"
-                                class="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-xs text-amber-300 font-mono">
-                        </div>
+                        <input type="hidden" name="adj_medical_used" id="f_adj_medical_used" value="0">
                     </div>
                 </div>
             </div>

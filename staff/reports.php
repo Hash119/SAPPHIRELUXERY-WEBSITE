@@ -73,9 +73,154 @@ if ($selectedEmpId > 0 && isset($pdo)) {
     $employeeTimesheet = calculate_employee_timesheet($pdo, $selectedEmpId, $startDate, $endDate);
 }
 
+// Helper to build Full Detailed Report (with Late Minutes, Late Hours & Hourly Decimal Breakdown)
+function build_full_detail_report($pdo, $startDate, $endDate, $selectedDept, $workingDaysInPeriod) {
+    $sql = "
+        SELECT e.id, e.machine_user_id, e.emp_no, e.name, e.calling_name, e.department, e.designation, e.employment_type, e.status,
+               SUM(CASE WHEN a.status IN ('Present', 'Late', 'Half Day') OR (a.check_in IS NOT NULL AND a.check_in != '00:00:00') THEN 1 ELSE 0 END) as present_days,
+               SUM(COALESCE(a.work_hours, 0)) as total_work_hrs,
+               SUM(CASE WHEN a.late_minutes > 0 THEN 1 ELSE 0 END) as late_count,
+               SUM(COALESCE(a.late_minutes, 0)) as total_late_mins,
+               SUM(COALESCE(a.early_leave_minutes, 0)) as total_early_mins,
+               SUM(COALESCE(a.overtime_minutes, 0)) as total_ot_mins
+        FROM employees e
+        LEFT JOIN attendance_logs a ON e.id = a.employee_id AND a.date BETWEEN :s_date AND :e_date
+        WHERE e.machine_user_id != 999
+    ";
+    $p = [':s_date' => $startDate, ':e_date' => $endDate];
+    if (!empty($selectedDept)) { $sql .= " AND e.department = :dept"; $p[':dept'] = $selectedDept; }
+    $sql .= " GROUP BY e.id ORDER BY e.machine_user_id ASC";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($p);
+    $rows = $stmt->fetchAll();
+
+    // Fetch approved leaves overlapping the period for exact leave day counts
+    $lStmt = $pdo->prepare("
+        SELECT employee_id, leave_type, start_date, end_date, total_days
+        FROM leaves
+        WHERE status = 'Approved' AND NOT (end_date < ? OR start_date > ?)
+    ");
+    $lStmt->execute([$startDate, $endDate]);
+    $leavesByEmp = [];
+    foreach ($lStmt->fetchAll() as $lv) {
+        $empId = $lv['employee_id'];
+        if (!isset($leavesByEmp[$empId])) $leavesByEmp[$empId] = ['paid' => 0.0, 'nopay' => 0.0];
+        $ovStart = max(strtotime($startDate), strtotime($lv['start_date']));
+        $ovEnd   = min(strtotime($endDate), strtotime($lv['end_date']));
+        if ($ovStart <= $ovEnd) {
+            $overlapDays = ((float)$lv['total_days'] < 1 && $lv['start_date'] === $lv['end_date'])
+                ? (float)$lv['total_days']
+                : (round(($ovEnd - $ovStart) / 86400) + 1);
+            if ($lv['leave_type'] === 'No Pay') {
+                $leavesByEmp[$empId]['nopay'] += $overlapDays;
+            } else {
+                $leavesByEmp[$empId]['paid'] += $overlapDays;
+            }
+        }
+    }
+
+    $result = [];
+    $grand = [
+        'staff_count' => 0, 'present_days' => 0, 'leave_days' => 0.0, 'nopay_days' => 0.0,
+        'total_work_hrs' => 0.0, 'late_count' => 0, 'total_late_mins' => 0,
+        'total_early_mins' => 0, 'total_ot_mins' => 0
+    ];
+
+    foreach ($rows as $r) {
+        $eid = $r['id'];
+        $pDays     = (int)($r['present_days'] ?? 0);
+        $workHrs   = round((float)($r['total_work_hrs'] ?? 0), 2);
+        $lateCnt   = (int)($r['late_count'] ?? 0);
+        $lateMins  = (int)($r['total_late_mins'] ?? 0);
+        $earlyMins = (int)($r['total_early_mins'] ?? 0);
+        $otMins    = (int)($r['total_ot_mins'] ?? 0);
+        $paidLeave = (float)($leavesByEmp[$eid]['paid'] ?? 0.0);
+        $adjNoPay  = max(0, round($workingDaysInPeriod - ($pDays + $paidLeave), 1));
+
+        $lateHrsDec  = round($lateMins / 60, 2);
+        $earlyHrsDec = round($earlyMins / 60, 2);
+        $otHrsDec    = round($otMins / 60, 2);
+        $avgWorkDay  = $pDays > 0 ? round($workHrs / $pDays, 2) : 0.0;
+        $avgLateDay  = $lateCnt > 0 ? round($lateMins / $lateCnt, 1) : 0.0;
+
+        $r['present_days']     = $pDays;
+        $r['leave_days']       = $paidLeave;
+        $r['nopay_days']       = $adjNoPay;
+        $r['total_work_hrs']   = $workHrs;
+        $r['avg_work_hrs']     = $avgWorkDay;
+        $r['late_count']       = $lateCnt;
+        $r['total_late_mins']  = $lateMins;
+        $r['late_hrs_decimal'] = $lateHrsDec;
+        $r['late_hm']          = format_minutes($lateMins);
+        $r['avg_late_mins']    = $avgLateDay;
+        $r['total_early_mins'] = $earlyMins;
+        $r['early_hrs_decimal']= $earlyHrsDec;
+        $r['total_ot_mins']    = $otMins;
+        $r['ot_hrs_decimal']   = $otHrsDec;
+        $r['net_hours']        = round(max(0, $workHrs - $lateHrsDec), 2);
+
+        $result[] = $r;
+
+        $grand['staff_count']++;
+        $grand['present_days']     += $pDays;
+        $grand['leave_days']       += $paidLeave;
+        $grand['nopay_days']       += $adjNoPay;
+        $grand['total_work_hrs']   += $workHrs;
+        $grand['late_count']       += $lateCnt;
+        $grand['total_late_mins']  += $lateMins;
+        $grand['total_early_mins'] += $earlyMins;
+        $grand['total_ot_mins']    += $otMins;
+    }
+
+    $grand['late_hrs_decimal']  = round($grand['total_late_mins'] / 60, 2);
+    $grand['early_hrs_decimal'] = round($grand['total_early_mins'] / 60, 2);
+    $grand['ot_hrs_decimal']    = round($grand['total_ot_mins'] / 60, 2);
+    $grand['total_work_hrs']    = round($grand['total_work_hrs'], 2);
+
+    return ['rows' => $result, 'grand' => $grand];
+}
+
 // Handle Attendance CSV Export
 if (isset($_GET['export']) && $_GET['export'] === 'attendance_csv') {
-    if ($selectedEmpId > 0 && $employeeTimesheet && $employeeTimesheet['employee']) {
+    if ($viewMode === 'full_detail' && isset($pdo)) {
+        $fdData = build_full_detail_report($pdo, $startDate, $endDate, $selectedDept, $workingDaysInPeriod);
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename=Sapphire_Full_Detail_Late_Hourly_Report_' . $startDate . '_to_' . $endDate . '.csv');
+        $output = fopen('php://output', 'w');
+        fputcsv($output, ['SAPPHIRE AESTHETIC & LUXURY - FULL DETAILED ATTENDANCE, LATE MINUTES & HOURLY BREAKDOWN REPORT']);
+        fputcsv($output, ['Period:', $startDate . ' to ' . $endDate, 'Working Days (7-Day Clinic):', $workingDaysInPeriod, 'Generated:', date('Y-m-d H:i:s')]);
+        fputcsv($output, []);
+        fputcsv($output, [
+            'Machine ID', 'Emp Code', 'Employee Name', 'Department', 'Designation',
+            'Present Days', 'Approved Leaves', 'Adjusted No-Pay Days',
+            'Total Work Hours', 'Avg Work Hrs/Day',
+            'Late Days', 'Total Late (Mins)', 'Total Late (Hrs & Mins)', 'Total Late Hours (Hourly Decimal)', 'Avg Late Mins/Late Day',
+            'Early Leave (Mins)', 'Early Leave (Hourly Decimal)',
+            'OT (Mins)', 'OT Hours (Hourly Decimal)', 'Net Effective Hours'
+        ]);
+        foreach ($fdData['rows'] as $r) {
+            fputcsv($output, [
+                '#' . $r['machine_user_id'], $r['emp_no'], $r['name'], $r['department'], $r['designation'],
+                $r['present_days'], $r['leave_days'], $r['nopay_days'],
+                $r['total_work_hrs'], $r['avg_work_hrs'],
+                $r['late_count'], $r['total_late_mins'], $r['late_hm'], $r['late_hrs_decimal'], $r['avg_late_mins'],
+                $r['total_early_mins'], $r['early_hrs_decimal'],
+                $r['total_ot_mins'], $r['ot_hrs_decimal'], $r['net_hours']
+            ]);
+        }
+        $g = $fdData['grand'];
+        fputcsv($output, []);
+        fputcsv($output, [
+            'GRAND TOTAL', '', $g['staff_count'] . ' Staff', '', '',
+            $g['present_days'], $g['leave_days'], $g['nopay_days'],
+            $g['total_work_hrs'], '',
+            $g['late_count'], $g['total_late_mins'], format_minutes($g['total_late_mins']), $g['late_hrs_decimal'], '',
+            $g['total_early_mins'], $g['early_hrs_decimal'],
+            $g['total_ot_mins'], $g['ot_hrs_decimal'], round(max(0, $g['total_work_hrs'] - $g['late_hrs_decimal']), 2)
+        ]);
+        fclose($output);
+        exit;
+    } elseif ($selectedEmpId > 0 && $employeeTimesheet && $employeeTimesheet['employee']) {
         $emp = $employeeTimesheet['employee'];
         header('Content-Type: text/csv; charset=utf-8');
         header('Content-Disposition: attachment; filename=Sapphire_Timesheet_' . $emp['emp_no'] . '_' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $emp['name']) . '_' . $startDate . '_to_' . $endDate . '.csv');
@@ -219,6 +364,7 @@ if (isset($_GET['export']) && $_GET['export'] === 'staff_csv') {
 $departments = [];
 $attendanceSummary = [];
 $attendanceDetailed = [];
+$fullDetailReport = ['rows' => [], 'grand' => []];
 $staffList = [];
 $activeCount = 0;
 $inactiveCount = 0;
@@ -229,7 +375,9 @@ if (isset($pdo)) {
         $departments = $pdo->query("SELECT DISTINCT department FROM employees WHERE department IS NOT NULL AND department != '' ORDER BY department")->fetchAll(PDO::FETCH_COLUMN);
 
         if ($tab === 'attendance') {
-            if ($viewMode === 'detailed') {
+            if ($viewMode === 'full_detail') {
+                $fullDetailReport = build_full_detail_report($pdo, $startDate, $endDate, $selectedDept, $workingDaysInPeriod);
+            } elseif ($viewMode === 'detailed') {
                 $sql = "
                     SELECT a.*, e.machine_user_id, e.name as emp_name, e.calling_name, e.department, e.gender
                     FROM attendance_logs a
@@ -414,14 +562,19 @@ require_once __DIR__ . '/includes/sidebar.php';
                             <option value="employee_statement" <?= $viewMode === 'employee_statement' ? 'selected' : '' ?>>Individual Employee Statement (Day-by-Day)</option>
                         <?php endif; ?>
                         <option value="summary" <?= $viewMode === 'summary' ? 'selected' : '' ?>>All Staff Summary (No-Pay Adjusted)</option>
+                        <option value="full_detail" <?= $viewMode === 'full_detail' ? 'selected' : '' ?>>Full Detail Report (Late Mins, Late Hours &amp; Hourly)</option>
                         <option value="detailed" <?= $viewMode === 'detailed' ? 'selected' : '' ?>>Daily Machine In/Out Punches</option>
                     </select>
                 </div>
 
-                <div class="pt-4 flex items-center gap-2">
+                <div class="pt-4 flex flex-wrap items-center gap-2">
                     <button type="submit" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5">
                         <i class="fa-solid fa-filter"></i> Apply Filter
                     </button>
+                    <a href="reports.php?tab=attendance&start_date=<?= urlencode($startDate) ?>&end_date=<?= urlencode($endDate) ?>&department=<?= urlencode($selectedDept) ?>&view_mode=full_detail"
+                        class="px-3.5 py-2 <?= $viewMode === 'full_detail' ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/25' : 'bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/30' ?> rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5">
+                        <i class="fa-solid fa-table-list"></i> Full Detail &amp; Hourly Report
+                    </a>
                     <a href="reports.php?tab=attendance&start_date=<?= urlencode($startDate) ?>&end_date=<?= urlencode($endDate) ?>&department=<?= urlencode($selectedDept) ?>&employee_id=<?= $selectedEmpId ?>&view_mode=<?= urlencode($viewMode) ?>&export=attendance_csv"
                         class="px-4 py-2 bg-gold-400 hover:bg-gold-500 text-slate-950 rounded-xl text-xs font-semibold shadow-lg shadow-gold-500/20 transition-all flex items-center gap-1.5">
                         <i class="fa-solid fa-file-csv"></i> Export to Excel (CSV)
@@ -434,9 +587,181 @@ require_once __DIR__ . '/includes/sidebar.php';
         </div>
 
         <!-- ======================================================== -->
+        <!-- VIEW 0: FULL DETAILED REPORT (LATE MINS, HOURS & HOURLY) -->
+        <!-- ======================================================== -->
+        <?php if ($viewMode === 'full_detail'): ?>
+            <?php
+                $fdRows  = $fullDetailReport['rows'] ?? [];
+                $fdGrand = $fullDetailReport['grand'] ?? [
+                    'staff_count'=>0,'present_days'=>0,'leave_days'=>0,'nopay_days'=>0,
+                    'total_work_hrs'=>0,'late_count'=>0,'total_late_mins'=>0,'late_hrs_decimal'=>0,
+                    'total_early_mins'=>0,'early_hrs_decimal'=>0,'total_ot_mins'=>0,'ot_hrs_decimal'=>0
+                ];
+            ?>
+            <div class="space-y-5">
+                <!-- Company-Wide Full Detail KPI Strip -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                    <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-3.5">
+                        <span class="text-[10px] text-slate-400 block uppercase font-semibold">Period Work Days</span>
+                        <span class="text-xl font-bold text-white mt-1 block font-mono"><?= $workingDaysInPeriod ?> Days</span>
+                        <span class="text-[10px] text-slate-500"><?= $fdGrand['staff_count'] ?> Staff Tracked</span>
+                    </div>
+                    <div class="bg-slate-900/70 border border-emerald-500/30 rounded-2xl p-3.5 bg-emerald-950/10">
+                        <span class="text-[10px] text-emerald-300 block uppercase font-semibold">Total Work Hours</span>
+                        <span class="text-xl font-bold text-emerald-400 mt-1 block font-mono"><?= number_format($fdGrand['total_work_hrs'], 1) ?>h</span>
+                        <span class="text-[10px] text-slate-400"><?= $fdGrand['present_days'] ?> Total Shifts</span>
+                    </div>
+                    <div class="bg-slate-900/70 border border-amber-500/40 rounded-2xl p-3.5 bg-amber-950/15">
+                        <span class="text-[10px] text-amber-300 block uppercase font-semibold">Total Late Minutes</span>
+                        <span class="text-xl font-bold text-amber-400 mt-1 block font-mono"><?= number_format($fdGrand['total_late_mins']) ?> min</span>
+                        <span class="text-[10px] text-slate-400"><?= $fdGrand['late_count'] ?> Late Instances</span>
+                    </div>
+                    <div class="bg-slate-900/70 border border-orange-500/40 rounded-2xl p-3.5 bg-orange-950/15">
+                        <span class="text-[10px] text-orange-300 block uppercase font-semibold">Total Late (Hourly)</span>
+                        <span class="text-xl font-bold text-orange-300 mt-1 block font-mono"><?= number_format($fdGrand['late_hrs_decimal'], 2) ?> hrs</span>
+                        <span class="text-[10px] text-slate-400"><?= format_minutes($fdGrand['total_late_mins']) ?> Exact</span>
+                    </div>
+                    <div class="bg-slate-900/70 border border-indigo-500/30 rounded-2xl p-3.5 bg-indigo-950/10">
+                        <span class="text-[10px] text-indigo-300 block uppercase font-semibold">Total OT (Hourly)</span>
+                        <span class="text-xl font-bold text-indigo-300 mt-1 block font-mono"><?= number_format($fdGrand['ot_hrs_decimal'], 2) ?> hrs</span>
+                        <span class="text-[10px] text-slate-400"><?= number_format($fdGrand['total_ot_mins']) ?> mins</span>
+                    </div>
+                    <div class="bg-slate-900/70 border border-rose-500/30 rounded-2xl p-3.5 bg-rose-950/10">
+                        <span class="text-[10px] text-rose-300 block uppercase font-semibold">Total No-Pay Days</span>
+                        <span class="text-xl font-bold text-rose-400 mt-1 block font-mono"><?= $fdGrand['nopay_days'] ?></span>
+                        <span class="text-[10px] text-slate-400"><?= $fdGrand['leave_days'] ?> Paid Leaves</span>
+                    </div>
+                </div>
+
+                <!-- Full Detail Breakdown Table -->
+                <div class="bg-slate-900/70 border border-slate-800/80 rounded-2xl overflow-hidden shadow-xl">
+                    <div class="p-4 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-400">
+                        <div>
+                            <strong class="text-white text-sm font-serif">Full Detailed Late Minutes, Late Hours &amp; Hourly Breakdown Report</strong>
+                            <span class="ml-2 text-gold-400 font-mono"><?= date('d M Y', strtotime($startDate)) ?> &rarr; <?= date('d M Y', strtotime($endDate)) ?></span>
+                        </div>
+                        <span class="text-[11px] text-slate-400">Hourly Decimal = Minutes &divide; 60 (for payroll calculation)</span>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs text-slate-300">
+                            <thead class="bg-slate-950/80 text-[10px] font-semibold uppercase tracking-wider text-slate-400 border-b border-slate-800">
+                                <tr>
+                                    <th class="py-3 px-3">ID</th>
+                                    <th class="py-3 px-3">Employee</th>
+                                    <th class="py-3 px-3 text-center">Present</th>
+                                    <th class="py-3 px-3 text-center">Leaves / No-Pay</th>
+                                    <th class="py-3 px-3 text-center">Work Hours (Avg/Day)</th>
+                                    <th class="py-3 px-3 text-center bg-amber-950/20 text-amber-300 border-l border-amber-500/20">Late Days</th>
+                                    <th class="py-3 px-3 text-center bg-amber-950/20 text-amber-300">Total Late (Mins)</th>
+                                    <th class="py-3 px-3 text-center bg-amber-950/20 text-amber-300">Late (Hrs &amp; Mins)</th>
+                                    <th class="py-3 px-3 text-center bg-orange-950/30 text-orange-300 font-bold border-r border-amber-500/20">Late Hourly (Hrs)</th>
+                                    <th class="py-3 px-3 text-center">Early Leave (Hrs)</th>
+                                    <th class="py-3 px-3 text-center text-indigo-300">OT (Hourly)</th>
+                                    <th class="py-3 px-3 text-center">Net Hours</th>
+                                    <th class="py-3 px-3 text-center">Statement</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-800/60 font-mono text-[11px]">
+                                <?php if (empty($fdRows)): ?>
+                                    <tr><td colspan="13" class="text-center py-8 text-slate-500 font-sans">No employee records found for this filter.</td></tr>
+                                <?php else: ?>
+                                    <?php foreach ($fdRows as $r): ?>
+                                        <tr class="hover:bg-slate-800/30 transition-colors">
+                                            <td class="py-3 px-3 font-bold text-gold-400">#<?= htmlspecialchars($r['machine_user_id']) ?></td>
+                                            <td class="py-3 px-3 font-sans">
+                                                <div class="font-medium text-white"><?= htmlspecialchars($r['name']) ?></div>
+                                                <div class="text-[10px] text-slate-500"><?= htmlspecialchars($r['department']) ?> &bull; <?= htmlspecialchars($r['designation']) ?></div>
+                                            </td>
+                                            <td class="py-3 px-3 text-center font-bold text-emerald-400"><?= $r['present_days'] ?></td>
+                                            <td class="py-3 px-3 text-center">
+                                                <span class="text-purple-300"><?= $r['leave_days'] ?>L</span>
+                                                <span class="text-slate-600 mx-0.5">/</span>
+                                                <span class="<?= $r['nopay_days'] > 0 ? 'text-rose-400 font-bold' : 'text-slate-500' ?>"><?= $r['nopay_days'] ?>NP</span>
+                                            </td>
+                                            <td class="py-3 px-3 text-center">
+                                                <div class="text-white font-semibold"><?= number_format($r['total_work_hrs'], 1) ?>h</div>
+                                                <div class="text-[10px] text-slate-500"><?= number_format($r['avg_work_hrs'], 1) ?>h/d</div>
+                                            </td>
+                                            <td class="py-3 px-3 text-center bg-amber-950/10 border-l border-amber-500/15">
+                                                <?= $r['late_count'] > 0 ? '<span class="text-amber-400 font-bold">' . $r['late_count'] . '</span>' : '<span class="text-slate-600">0</span>' ?>
+                                            </td>
+                                            <td class="py-3 px-3 text-center bg-amber-950/10">
+                                                <?php if ($r['total_late_mins'] > 0): ?>
+                                                    <span class="text-amber-300 font-bold"><?= number_format($r['total_late_mins']) ?> min</span>
+                                                    <div class="text-[9px] text-slate-500">avg <?= $r['avg_late_mins'] ?>m/day</div>
+                                                <?php else: ?>
+                                                    <span class="text-slate-600">0 min</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td class="py-3 px-3 text-center bg-amber-950/10">
+                                                <?= $r['total_late_mins'] > 0 ? '<span class="text-amber-400 font-semibold">' . $r['late_hm'] . '</span>' : '<span class="text-slate-600">0h</span>' ?>
+                                            </td>
+                                            <td class="py-3 px-3 text-center bg-orange-950/20 border-r border-amber-500/15">
+                                                <?php if ($r['total_late_mins'] > 0): ?>
+                                                    <span class="px-2 py-0.5 rounded font-bold text-orange-300 bg-orange-500/15 border border-orange-500/30">
+                                                        <?= number_format($r['late_hrs_decimal'], 2) ?> hrs
+                                                    </span>
+                                                <?php else: ?>
+                                                    <span class="text-slate-600">0.00 hrs</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td class="py-3 px-3 text-center">
+                                                <?php if ($r['total_early_mins'] > 0): ?>
+                                                    <span class="text-rose-300"><?= number_format($r['early_hrs_decimal'], 2) ?>h</span>
+                                                    <div class="text-[9px] text-slate-500"><?= $r['total_early_mins'] ?>m</div>
+                                                <?php else: ?>
+                                                    <span class="text-slate-600">-</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td class="py-3 px-3 text-center">
+                                                <?php if ($r['total_ot_mins'] > 0): ?>
+                                                    <span class="text-indigo-300 font-bold"><?= number_format($r['ot_hrs_decimal'], 2) ?> hrs</span>
+                                                    <div class="text-[9px] text-slate-500"><?= $r['total_ot_mins'] ?>m</div>
+                                                <?php else: ?>
+                                                    <span class="text-slate-600">0.00</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td class="py-3 px-3 text-center font-semibold text-cyan-300">
+                                                <?= number_format($r['net_hours'], 2) ?>h
+                                            </td>
+                                            <td class="py-3 px-3 text-center font-sans">
+                                                <a href="reports.php?tab=attendance&start_date=<?= urlencode($startDate) ?>&end_date=<?= urlencode($endDate) ?>&employee_id=<?= $r['id'] ?>&view_mode=employee_statement"
+                                                    class="px-2 py-1 rounded-lg text-[10px] font-semibold bg-gold-500/10 hover:bg-gold-500/20 text-gold-400 border border-gold-500/30 inline-flex items-center gap-1">
+                                                    <span>Daily</span> <i class="fa-solid fa-arrow-right text-[9px]"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                            <?php if (!empty($fdRows)): ?>
+                            <tfoot class="bg-slate-950/90 border-t-2 border-gold-500/30 font-mono text-[11px] font-bold text-white">
+                                <tr>
+                                    <td colspan="2" class="py-3.5 px-3 font-sans uppercase tracking-wider text-gold-400">Grand Total (<?= $fdGrand['staff_count'] ?> Staff)</td>
+                                    <td class="py-3.5 px-3 text-center text-emerald-400"><?= $fdGrand['present_days'] ?></td>
+                                    <td class="py-3.5 px-3 text-center"><?= $fdGrand['leave_days'] ?>L / <span class="text-rose-400"><?= $fdGrand['nopay_days'] ?>NP</span></td>
+                                    <td class="py-3.5 px-3 text-center"><?= number_format($fdGrand['total_work_hrs'], 1) ?>h</td>
+                                    <td class="py-3.5 px-3 text-center text-amber-400 bg-amber-950/20 border-l border-amber-500/20"><?= $fdGrand['late_count'] ?></td>
+                                    <td class="py-3.5 px-3 text-center text-amber-300 bg-amber-950/20"><?= number_format($fdGrand['total_late_mins']) ?> min</td>
+                                    <td class="py-3.5 px-3 text-center text-amber-400 bg-amber-950/20"><?= format_minutes($fdGrand['total_late_mins']) ?></td>
+                                    <td class="py-3.5 px-3 text-center text-orange-300 bg-orange-950/30 border-r border-amber-500/20"><?= number_format($fdGrand['late_hrs_decimal'], 2) ?> hrs</td>
+                                    <td class="py-3.5 px-3 text-center text-rose-300"><?= number_format($fdGrand['early_hrs_decimal'], 2) ?>h</td>
+                                    <td class="py-3.5 px-3 text-center text-indigo-300"><?= number_format($fdGrand['ot_hrs_decimal'], 2) ?> hrs</td>
+                                    <td class="py-3.5 px-3 text-center text-cyan-300"><?= number_format(max(0, $fdGrand['total_work_hrs'] - $fdGrand['late_hrs_decimal']), 2) ?>h</td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                            <?php endif; ?>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        <!-- ======================================================== -->
         <!-- VIEW 1: INDIVIDUAL EMPLOYEE STATEMENT (DAY-BY-DAY)       -->
         <!-- ======================================================== -->
-        <?php if ($selectedEmpId > 0 && $employeeTimesheet && $employeeTimesheet['employee']): ?>
+        <?php elseif ($selectedEmpId > 0 && $employeeTimesheet && $employeeTimesheet['employee']): ?>
             <?php 
                 $emp = $employeeTimesheet['employee'];
                 $totals = $employeeTimesheet['totals'];
@@ -491,9 +816,9 @@ require_once __DIR__ . '/includes/sidebar.php';
 
                     <!-- Late Time -->
                     <div class="bg-slate-900/70 border border-amber-500/30 rounded-2xl p-3.5 bg-amber-950/10">
-                        <span class="text-[10px] text-amber-300 block uppercase font-semibold">Late Time</span>
+                        <span class="text-[10px] text-amber-300 block uppercase font-semibold">Late Time (Hourly)</span>
                         <span class="text-xl font-bold text-amber-400 mt-1 block font-mono"><?= format_minutes($totals['total_late_mins']) ?></span>
-                        <span class="text-[10px] text-slate-400"><?= $totals['late_count'] ?> Late Punches</span>
+                        <span class="text-[10px] text-orange-300/90 font-mono block"><?= $totals['total_late_mins'] ?>m &bull; <?= number_format($totals['total_late_mins'] / 60, 2) ?> hrs (<?= $totals['late_count'] ?>x)</span>
                     </div>
 
                     <!-- Overtime (OT) -->
@@ -670,7 +995,12 @@ require_once __DIR__ . '/includes/sidebar.php';
                                             <?= $row['late_count'] > 0 ? '<span class="text-amber-400 font-bold">' . $row['late_count'] . '</span>' : '-' ?>
                                         </td>
                                         <td class="py-3 px-3 text-center">
-                                            <?= $row['total_late_mins'] > 0 ? '<span class="text-amber-400 font-bold">+' . format_minutes($row['total_late_mins']) . '</span>' : '-' ?>
+                                            <?php if ($row['total_late_mins'] > 0): ?>
+                                                <span class="text-amber-400 font-bold">+<?= format_minutes($row['total_late_mins']) ?></span>
+                                                <div class="text-[9px] text-orange-300/90"><?= $row['total_late_mins'] ?>m (<?= number_format($row['total_late_mins'] / 60, 2) ?> hrs)</div>
+                                            <?php else: ?>
+                                                -
+                                            <?php endif; ?>
                                         </td>
                                         <td class="py-3 px-3 text-center">
                                             <?php if ($row['total_ot_mins'] > 0): ?>

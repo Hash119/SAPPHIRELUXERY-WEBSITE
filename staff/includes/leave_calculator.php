@@ -86,7 +86,7 @@ if (!function_exists('calculate_employee_annual_leave_accrual')) {
                 'annual_total'     => 14.0,
                 'casual_total'     => 7.0,
                 'monthly_quota'    => 4.0,
-                'medical_total'    => 7.0,
+                'medical_total'    => 0.0,
                 'is_accruing'      => false,
                 'accrued_months'   => 12,
                 'appointment_date' => $appointmentDate,
@@ -103,7 +103,7 @@ if (!function_exists('calculate_employee_annual_leave_accrual')) {
                 'annual_total'     => 0.0,
                 'casual_total'     => 0.0,
                 'monthly_quota'    => 4.0,
-                'medical_total'    => 7.0,
+                'medical_total'    => 0.0,
                 'is_accruing'      => false,
                 'accrued_months'   => 0,
                 'appointment_date' => $appointmentDate,
@@ -123,7 +123,7 @@ if (!function_exists('calculate_employee_annual_leave_accrual')) {
                     'annual_total'     => 14.0,
                     'casual_total'     => 7.0,
                     'monthly_quota'    => 4.0,
-                    'medical_total'    => 7.0,
+                    'medical_total'    => 0.0,
                     'is_accruing'      => false,
                     'accrued_months'   => 12,
                     'appointment_date' => $appointmentDate,
@@ -140,7 +140,7 @@ if (!function_exists('calculate_employee_annual_leave_accrual')) {
                     'annual_total'     => $accruedAnnual,
                     'casual_total'     => 0.0,
                     'monthly_quota'    => 4.0,
-                    'medical_total'    => 7.0,
+                    'medical_total'    => 0.0,
                     'is_accruing'      => true,
                     'accrued_months'   => $accruedMonths,
                     'appointment_date' => $appointmentDate,
@@ -157,7 +157,7 @@ if (!function_exists('calculate_employee_annual_leave_accrual')) {
             'annual_total'     => 14.0,
             'casual_total'     => 7.0,
             'monthly_quota'    => 4.0,
-            'medical_total'    => 7.0,
+            'medical_total'    => 0.0,
             'is_accruing'      => false,
             'accrued_months'   => 12,
             'appointment_date' => $appointmentDate,
@@ -189,7 +189,7 @@ if (!function_exists('calculate_employee_annual_leave_accrual')) {
             $curBal = $bStmt->fetch();
 
             $matTotal = (($emp['gender'] ?? '') === 'Female' && !empty($emp['maternity_eligible'])) ? 84.0 : 0.0;
-            $medTotal = (float)($ent['medical_total'] ?? 7.0);
+            $medTotal = 0.0;
 
             if ($curBal) {
                 $uStmt = $pdo->prepare("
